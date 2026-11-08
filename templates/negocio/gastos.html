@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% load core_extras %}
+{% block title %}Gastos · Bosselli{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1 class="page-title">Gastos</h1>
+    <p class="page-sub">Alquiler, suministros, seguros, servicios… Total filtrado: {{ total|euro }}</p>
+  </div>
+  <a class="btn btn-gold btn-sm" href="{% url 'gasto_nuevo' %}"><i class="bi bi-plus-lg me-1"></i> Nuevo gasto</a>
+</div>
+
+<form class="filtros mb-3" method="get">
+  <div class="row g-2 align-items-end">
+    <div class="col-6 col-md-2">
+      <label class="form-label">Desde</label>
+      <input type="date" class="form-control" name="desde" value="{{ filtros.desde }}">
+    </div>
+    <div class="col-6 col-md-2">
+      <label class="form-label">Hasta</label>
+      <input type="date" class="form-control" name="hasta" value="{{ filtros.hasta }}">
+    </div>
+    <div class="col-6 col-md-3">
+      <label class="form-label">Categoría</label>
+      <select class="form-select" name="categoria">
+        <option value="">Todas</option>
+        {% for valor, etiqueta in categorias %}<option value="{{ valor }}" {% if filtros.categoria == valor %}selected{% endif %}>{{ etiqueta }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-6 col-md-2">
+      <label class="form-label">Tienda</label>
+      <select class="form-select" name="tienda">
+        <option value="">Todas</option>
+        {% for t in tiendas %}<option value="{{ t.pk }}" {% if filtros.tienda == t.pk|stringformat:"s" %}selected{% endif %}>{{ t.nombre }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-12 col-md-3">
+      <label class="form-label">Buscar</label>
+      <input class="form-control" name="q" value="{{ filtros.q }}" placeholder="Descripción o proveedor">
+    </div>
+  </div>
+  <div class="d-flex gap-2 mt-2">
+    <button class="btn btn-primary btn-sm" type="submit"><i class="bi bi-funnel me-1"></i> Filtrar</button>
+    <a class="btn btn-outline-secondary btn-sm" href="{% url 'gastos' %}">Limpiar</a>
+  </div>
+</form>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Fecha</th><th>Categoría</th><th>Proveedor</th><th>Descripción</th><th>Tienda</th><th class="text-end">Base</th><th class="text-end">Total</th><th></th></tr></thead>
+      <tbody>
+        {% for g in page_obj %}
+          <tr>
+            <td class="small">{{ g.fecha|date:"d/m/Y" }}</td>
+            <td><span class="badge badge-soft">{{ g.get_categoria_display }}</span></td>
+            <td class="small">{{ g.nombre_proveedor|default:"—" }}</td>
+            <td>{{ g.descripcion }}</td>
+            <td class="small">{{ g.tienda.nombre|default:"—" }}</td>
+            <td class="text-end num small">{{ g.base|euro }}</td>
+            <td class="text-end num fw-bold">{{ g.total|euro }}</td>
+            <td class="text-end">
+              {% if g.archivo %}<a class="btn btn-sm btn-icon btn-outline-secondary" href="{{ g.archivo.url }}" target="_blank"><i class="bi bi-paperclip"></i></a>{% endif %}
+              <a class="btn btn-sm btn-icon btn-outline-secondary" href="{% url 'gasto_editar' g.pk %}"><i class="bi bi-pencil"></i></a>
+              <form method="post" action="{% url 'gasto_borrar' g.pk %}" data-confirm="¿Eliminar el gasto?" class="d-inline">
+                {% csrf_token %}<button class="btn btn-sm btn-icon btn-outline-danger" type="submit"><i class="bi bi-trash"></i></button>
+              </form>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="8" class="empty-state"><i class="bi bi-cash-coin"></i>No hay gastos registrados.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% include "partials/paginacion.html" %}
+{% endblock %}

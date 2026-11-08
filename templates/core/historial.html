@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Historial · Bosselli{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1 class="page-title">Historial de actividad</h1>
+    <p class="page-sub">Quién hizo qué, cuándo y desde dónde</p>
+  </div>
+</div>
+
+<form class="filtros mb-3" method="get">
+  <div class="row g-2 align-items-end">
+    <div class="col-6 col-md-2">
+      <label class="form-label">Desde</label>
+      <input type="date" class="form-control" name="desde" value="{{ filtros.desde }}">
+    </div>
+    <div class="col-6 col-md-2">
+      <label class="form-label">Hasta</label>
+      <input type="date" class="form-control" name="hasta" value="{{ filtros.hasta }}">
+    </div>
+    <div class="col-6 col-md-2">
+      <label class="form-label">Acción</label>
+      <select class="form-select" name="accion">
+        <option value="">Todas</option>
+        {% for valor, etiqueta in acciones %}
+          <option value="{{ valor }}" {% if filtros.accion == valor %}selected{% endif %}>{{ etiqueta }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-6 col-md-2">
+      <label class="form-label">Modelo</label>
+      <select class="form-select" name="modelo">
+        <option value="">Todos</option>
+        {% for m in modelos %}
+          <option value="{{ m }}" {% if filtros.modelo == m %}selected{% endif %}>{{ m }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-12 col-md-2">
+      <label class="form-label">Usuario</label>
+      <input class="form-control" name="usuario" value="{{ filtros.usuario }}" placeholder="usuario">
+    </div>
+    <div class="col-12 col-md-2">
+      <label class="form-label">Buscar</label>
+      <input class="form-control" name="q" value="{{ filtros.q }}" placeholder="objeto o cambio">
+    </div>
+  </div>
+  <div class="d-flex gap-2 mt-2">
+    <button class="btn btn-primary btn-sm" type="submit"><i class="bi bi-funnel me-1"></i> Filtrar</button>
+    <a class="btn btn-outline-secondary btn-sm" href="{% url 'historial' %}">Limpiar</a>
+  </div>
+</form>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Usuario</th>
+          <th>Acción</th>
+          <th>Objeto</th>
+          <th class="d-none d-lg-table-cell">Cambios</th>
+          <th class="d-none d-xl-table-cell">IP</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in page_obj %}
+          <tr>
+            <td class="num small">{{ r.fecha|date:"d/m/Y H:i:s" }}</td>
+            <td>{{ r.usuario_nombre|default:"sistema" }}</td>
+            <td><span class="badge badge-soft">{{ r.get_accion_display }}</span></td>
+            <td>
+              <div class="fw-semibold">{{ r.objeto_repr|default:"—"|truncatechars:60 }}</div>
+              {% if r.content_type %}<div class="text-muted small">{{ r.content_type.model }}</div>{% endif %}
+            </td>
+            <td class="d-none d-lg-table-cell small text-muted">{{ r.cambios|truncatechars:120 }}</td>
+            <td class="d-none d-xl-table-cell small text-muted">{{ r.ip|default:"—" }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="6" class="empty-state"><i class="bi bi-clock-history"></i>No hay actividad registrada.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% include "partials/paginacion.html" %}
+{% endblock %}

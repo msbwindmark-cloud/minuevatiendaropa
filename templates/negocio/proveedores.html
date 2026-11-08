@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% load core_extras %}
+{% block title %}Proveedores · Bosselli{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1 class="page-title">Proveedores</h1>
+    <p class="page-sub">Empresas de tejidos, confección y servicios. Se crean solos al importar facturas.</p>
+  </div>
+  <a class="btn btn-gold btn-sm" href="{% url 'proveedor_nuevo' %}"><i class="bi bi-plus-lg me-1"></i> Nuevo proveedor</a>
+</div>
+
+<form class="filtros mb-3" method="get">
+  <div class="row g-2 align-items-end">
+    <div class="col-12 col-md-8">
+      <label class="form-label">Buscar</label>
+      <input class="form-control" name="q" value="{{ filtros.q }}" placeholder="Nombre, CIF o email" data-auto-search>
+    </div>
+    <div class="col-12 col-md-4 d-flex gap-2">
+      <button class="btn btn-primary btn-sm flex-fill" type="submit">Buscar</button>
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'proveedores' %}">Limpiar</a>
+    </div>
+  </div>
+</form>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Nombre</th><th>CIF</th><th>Contacto</th><th>Teléfono</th><th>Email</th><th></th></tr></thead>
+      <tbody>
+        {% for p in page_obj %}
+          <tr>
+            <td class="fw-semibold">{{ p.nombre }}</td>
+            <td class="small text-muted">{{ p.cif|default:"—" }}</td>
+            <td class="small">{{ p.persona_contacto|default:"—" }}</td>
+            <td>{{ p.telefono|default:"—" }}</td>
+            <td class="small">{{ p.email|default:"—" }}</td>
+            <td class="text-end">
+              <a class="btn btn-sm btn-icon btn-outline-secondary" href="{% url 'proveedor_editar' p.pk %}"><i class="bi bi-pencil"></i></a>
+              <form method="post" action="{% url 'proveedor_borrar' p.pk %}" data-confirm="¿Eliminar al proveedor {{ p.nombre }}?" class="d-inline">
+                {% csrf_token %}<button class="btn btn-sm btn-icon btn-outline-danger" type="submit"><i class="bi bi-trash"></i></button>
+              </form>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="6" class="empty-state"><i class="bi bi-truck"></i>No hay proveedores.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% include "partials/paginacion.html" %}
+{% endblock %}

@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+{% load core_extras %}
+{% block title %}Panel · Bosselli Gestión{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1 class="page-title">Hola, {{ user.first_name|default:user.username }}</h1>
+    <p class="page-sub">{{ hoy|date:"l, d \d\e F \d\e Y" }} · {{ organizacion.nombre|default:"Bosselli" }}</p>
+  </div>
+  <div class="d-flex flex-wrap gap-2 no-print">
+    <a class="btn btn-outline-primary btn-sm" href="{% url 'factura_subir' %}"><i class="bi bi-cloud-arrow-up me-1"></i> Subir factura</a>
+    <a class="btn btn-gold btn-sm" href="{% url 'venta_nuevo' %}"><i class="bi bi-plus-lg me-1"></i> Registrar venta</a>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-6 col-xl-3">
+    <div class="stat-card h-100">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <div class="stat-label">Ventas del mes</div>
+          <div class="stat-value">{{ ingresos_mes|euro }}</div>
+          <div class="stat-hint">{{ n_ventas }} operaciones · hoy {{ ingresos_hoy|euro }}</div>
+        </div>
+        <span class="stat-icon"><i class="bi bi-receipt"></i></span>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="stat-card h-100">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <div class="stat-label">Beneficio estimado</div>
+          <div class="stat-value {% if beneficio < 0 %}text-danger{% else %}text-success{% endif %}">{{ beneficio|euro }}</div>
+          <div class="stat-hint">Ventas − compras − gastos − nóminas</div>
+        </div>
+        <span class="stat-icon"><i class="bi bi-graph-up-arrow"></i></span>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="stat-card h-100">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <div class="stat-label">Gastos del mes</div>
+          <div class="stat-value">{{ gastos_total|euro }}</div>
+          <div class="stat-hint">Compras: {{ compras_total|euro }} · Nóminas: {{ nominas_total|euro }}</div>
+        </div>
+        <span class="stat-icon"><i class="bi bi-cash-coin"></i></span>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="stat-card h-100">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <div class="stat-label">Ticket medio</div>
+          <div class="stat-value">{{ ticket_medio|euro }}</div>
+          <div class="stat-hint">Valor del stock: {{ valor_stock|euro }}</div>
+        </div>
+        <span class="stat-icon"><i class="bi bi-tags"></i></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-12 col-xl-8">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-bar-chart-line text-gold me-1"></i> Ventas y gastos · últimos 6 meses</span>
+        <span class="small text-muted"><span class="d-inline-block rounded-circle bg-primary me-1" style="width:8px;height:8px;"></span>Ventas
+          <span class="d-inline-block rounded-circle ms-2 me-1" style="width:8px;height:8px;background:#b08d57;"></span>Gastos</span>
+      </div>
+      <div class="card-body">
+        <div class="d-flex align-items-end justify-content-between gap-2" style="height:220px;">
+          {% for b in barras %}
+            <div class="d-flex flex-column align-items-center flex-fill h-100 justify-content-end" title="{{ b.label }} · Ventas {{ b.ventas|euro }} · Gastos {{ b.gastos|euro }}">
+              <div class="d-flex align-items-end gap-1 w-100 justify-content-center" style="height:100%;">
+                <div class="rounded-top" style="width:34%;height:{{ b.vp }}%;background:#0f172a;min-height:4px;"></div>
+                <div class="rounded-top" style="width:34%;height:{{ b.gp }}%;background:#b08d57;min-height:4px;"></div>
+              </div>
+              <div class="small text-muted mt-2">{{ b.label }}</div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-xl-4">
+    <div class="card h-100">
+      <div class="card-header"><i class="bi bi-shop text-gold me-1"></i> Por tienda · este mes</div>
+      <div class="card-body">
+        {% for t in por_tienda %}
+          <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+            <div>
+              <div class="fw-semibold">{{ t.tienda__nombre }}</div>
+              <div class="small text-muted">{{ t.n }} ventas</div>
+            </div>
+            <div class="fw-bold num">{{ t.total|euro }}</div>
+          </div>
+        {% empty %}
+          <div class="empty-state py-4"><i class="bi bi-shop"></i>Aún no hay ventas este mes.</div>
+        {% endfor %}
+        <div class="d-grid gap-2 mt-3">
+          <a class="btn btn-outline-primary btn-sm" href="{% url 'ventas' %}">Ver todas las ventas</a>
+          <a class="btn btn-outline-primary btn-sm" href="{% url 'gestoria' %}">Preparar gestoría</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-12 col-xl-5">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-box-seam text-gold me-1"></i> Stock bajo</span>
+        <a class="small" href="{% url 'articulos' %}?bajo=1">Ver todos</a>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm table-hover mb-0">
+          <thead><tr><th>Artículo</th><th class="text-end">Stock</th><th class="text-end">Mín.</th></tr></thead>
+          <tbody>
+            {% for a in stock_bajo|slice:":7" %}
+              <tr>
+                <td><a class="text-decoration-none" href="{% url 'articulo_detalle' a.pk %}">{{ a.nombre }}</a><div class="small text-muted">{{ a.referencia }}</div></td>
+                <td class="text-end num {% if a.stock_total == 0 %}text-danger fw-bold{% endif %}">{{ a.stock_total }}</td>
+                <td class="text-end num text-muted">{{ a.stock_minimo }}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="3" class="empty-state py-4"><i class="bi bi-check2-circle"></i>Todo el stock está por encima del mínimo.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-xl-7">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-clock-history text-gold me-1"></i> Últimas ventas</span>
+        <a class="small" href="{% url 'ventas' %}">Ver todas</a>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm table-hover mb-0">
+          <thead><tr><th>Número</th><th>Fecha</th><th class="hide-sm">Tienda</th><th class="text-end">Total</th><th>Estado</th></tr></thead>
+          <tbody>
+            {% for v in ultimas_ventas %}
+              <tr>
+                <td><a class="text-decoration-none fw-semibold" href="{% url 'venta_detalle' v.pk %}">{{ v.numero }}</a></td>
+                <td class="small">{{ v.fecha|date:"d/m/Y" }}</td>
+                <td class="hide-sm small">{{ v.tienda.nombre }}</td>
+                <td class="text-end num">{{ v.total|euro }}</td>
+                <td><span class="badge badge-estado-{{ v.estado }}">{{ v.get_estado_display }}</span></td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="5" class="empty-state py-4"><i class="bi bi-receipt"></i>Todavía no hay ventas registradas.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if facturas_pendientes or compras_pendientes or nominas_borrador %}
+  <div class="row g-3 mt-1">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-body d-flex flex-wrap gap-3 align-items-center">
+          <span class="fw-semibold"><i class="bi bi-exclamation-circle text-gold me-1"></i> Tareas pendientes:</span>
+          {% if facturas_pendientes %}<a class="badge badge-soft text-decoration-none" href="{% url 'facturas' %}?estado=pendiente">{{ facturas_pendientes }} facturas por revisar</a>{% endif %}
+          {% if compras_pendientes %}<a class="badge badge-soft text-decoration-none" href="{% url 'compras' %}?estado=pendiente">{{ compras_pendientes }} compras pendientes de pago</a>{% endif %}
+          {% if nominas_borrador %}<a class="badge badge-soft text-decoration-none" href="{% url 'nominas' %}?estado=borrador">{{ nominas_borrador }} nóminas en borrador</a>{% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+{% endif %}
+{% endblock %}

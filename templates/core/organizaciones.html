@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Organizaciones · Bosselli{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1 class="page-title">Organizaciones</h1>
+    <p class="page-sub">Vista de superusuario. Cada organización tiene sus propios datos aislados.</p>
+  </div>
+</div>
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Nombre</th><th>CIF</th><th>Email</th><th>Teléfono</th><th>Activa</th></tr></thead>
+      <tbody>
+        {% for org in organizaciones %}
+          <tr>
+            <td class="fw-semibold">{{ org.nombre }}</td>
+            <td>{{ org.cif|default:"—" }}</td>
+            <td>{{ org.email|default:"—" }}</td>
+            <td>{{ org.telefono|default:"—" }}</td>
+            <td>{% if org.activa %}<span class="badge badge-estado-cobrada">Sí</span>{% else %}<span class="badge badge-estado-anulada">No</span>{% endif %}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="5" class="empty-state">No hay organizaciones.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

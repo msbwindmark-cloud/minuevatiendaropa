@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% load core_extras %}
+{% block title %}{{ venta.numero }} · Bosselli{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1 class="page-title">{{ venta.numero }}</h1>
+    <p class="page-sub">{{ venta.get_tipo_display }} · {{ venta.tienda.nombre }} · {{ venta.fecha|date:"d/m/Y" }}{% if venta.cliente %} · {{ venta.cliente.nombre_completo }}{% endif %}</p>
+  </div>
+  <div class="d-flex flex-wrap gap-2">
+    <a class="btn btn-outline-secondary btn-sm" href="{% url 'ventas' %}"><i class="bi bi-arrow-left me-1"></i> Volver</a>
+    <a class="btn btn-outline-primary btn-sm" href="{% url 'venta_pdf' venta.pk %}" target="_blank"><i class="bi bi-file-pdf me-1"></i> PDF</a>
+    <a class="btn btn-outline-primary btn-sm" href="{% url 'venta_editar' venta.pk %}"><i class="bi bi-pencil me-1"></i> Editar</a>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-12 col-lg-8">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-list-ul text-gold me-1"></i> Líneas</div>
+      <div class="table-responsive">
+        <table class="table table-sm mb-0">
+          <thead><tr><th>Concepto</th><th class="text-end">Cant.</th><th class="text-end">Precio</th><th class="text-end">Dto.</th><th class="text-end">IVA</th><th class="text-end">Total</th></tr></thead>
+          <tbody>
+            {% for l in venta.lineas.all %}
+              <tr>
+                <td>{{ l.descripcion }}{% if l.variante %}<div class="small text-muted">{{ l.variante.talla }} {{ l.variante.color }}</div>{% endif %}</td>
+                <td class="text-end num">{{ l.cantidad }}</td>
+                <td class="text-end num">{{ l.precio_unitario|euro }}</td>
+                <td class="text-end num">{{ l.descuento_pct|pct }}</td>
+                <td class="text-end num">{{ l.iva_pct|pct }}</td>
+                <td class="text-end num fw-bold">{{ l.total|euro }}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="6" class="text-center text-muted small py-3">Sin líneas (importe directo)</td></tr>
+            {% endfor %}
+            <tr class="total-row">
+              <td colspan="5" class="text-end">Base imponible</td>
+              <td class="text-end num">{{ venta.base|euro }}</td>
+            </tr>
+            <tr class="total-row">
+              <td colspan="5" class="text-end">IVA</td>
+              <td class="text-end num">{{ venta.iva_cuota|euro }}</td>
+            </tr>
+            <tr class="total-row">
+              <td colspan="5" class="text-end fw-bold">TOTAL</td>
+              <td class="text-end num fw-bold text-gold">{{ venta.total|euro }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-4">
+    <div class="card mb-3">
+      <div class="card-header">Datos</div>
+      <div class="card-body">
+        <dl class="mb-0">
+          <div class="kv"><dt>Número</dt><dd>{{ venta.numero }}</dd></div>
+          <div class="kv"><dt>Fecha</dt><dd>{{ venta.fecha|date:"d/m/Y" }}</dd></div>
+          <div class="kv"><dt>Tienda</dt><dd>{{ venta.tienda.nombre }}</dd></div>
+          <div class="kv"><dt>Cliente</dt><dd>{{ venta.cliente.nombre_completo|default:"—" }}</dd></div>
+          <div class="kv"><dt>Tipo</dt><dd>{{ venta.get_tipo_display }}</dd></div>
+          <div class="kv"><dt>Origen</dt><dd>{{ venta.get_origen_display }}</dd></div>
+          <div class="kv"><dt>Forma de pago</dt><dd>{{ venta.get_forma_pago_display }}</dd></div>
+          <div class="kv"><dt>Estado</dt><dd><span class="badge badge-estado-{{ venta.estado }}">{{ venta.get_estado_display }}</span></dd></div>
+          {% if venta.notas %}<div class="kv"><dt>Notas</dt><dd>{{ venta.notas }}</dd></div>{% endif %}
+          {% if venta.archivo %}<div class="kv"><dt>Archivo</dt><dd><a href="{{ venta.archivo.url }}" target="_blank">Ver archivo</a></dd></div>{% endif %}
+        </dl>
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-header">Acciones</div>
+      <div class="card-body d-grid gap-2">
+        <form method="post" action="{% url 'venta_estado' venta.pk %}" class="d-flex gap-2">
+          {% csrf_token %}
+          <select class="form-select form-select-sm" name="estado">
+            <option value="emitida" {% if venta.estado == "emitida" %}selected{% endif %}>Emitida</option>
+            <option value="cobrada" {% if venta.estado == "cobrada" %}selected{% endif %}>Cobrada</option>
+            <option value="anulada" {% if venta.estado == "anulada" %}selected{% endif %}>Anulada</option>
+          </select>
+          <button class="btn btn-sm btn-outline-primary" type="submit">Cambiar</button>
+        </form>
+        <form method="post" action="{% url 'venta_email' venta.pk %}" class="d-flex gap-2">
+          {% csrf_token %}
+          <input class="form-control form-control-sm" type="email" name="email" value="{{ venta.cliente.email|default:'' }}" placeholder="email@ejemplo.com">
+          <button class="btn btn-sm btn-gold" type="submit"><i class="bi bi-envelope"></i></button>
+        </form>
+        <form method="post" action="{% url 'venta_borrar' venta.pk %}" data-confirm="¿Eliminar la venta {{ venta.numero }}?" class="d-inline">
+          {% csrf_token %}<button class="btn btn-sm btn-outline-danger w-100" type="submit"><i class="bi bi-trash me-1"></i> Eliminar</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

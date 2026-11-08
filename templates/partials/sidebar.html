@@ -1,0 +1,22 @@
+{% load static %}
+<aside class="sidebar d-none d-lg-flex flex-column">
+  <div class="sidebar-inner">
+    {% include "partials/nav.html" %}
+  </div>
+</aside>
+
+<div class="offcanvas offcanvas-start sidebar-offcanvas" tabindex="-1" id="menuLateral" aria-labelledby="menuLateralLabel">
+  <div class="offcanvas-header border-bottom border-secondary-subtle">
+    <div class="d-flex align-items-center gap-2">
+      <span class="brand-mark">B</span>
+      <div class="lh-1">
+        <div class="brand-name text-white">BOSSELLI</div>
+        <small class="text-white-50">Gestión</small>
+      </div>
+    </div>
+    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Cerrar"></button>
+  </div>
+  <div class="offcanvas-body sidebar-inner">
+    {% include "partials/nav.html" %}
+  </div>
+</div>

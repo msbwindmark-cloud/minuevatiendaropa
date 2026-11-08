@@ -1,0 +1,90 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0f172a">
+  <title>{% block title %}Bosselli Gestión{% endblock %}</title>
+  <meta name="description" content="Gestión interna de las tiendas Bosselli. Sastrería y moda clásica desde 1973.">
+  <link rel="manifest" href="{% url 'manifest' %}">
+  <link rel="icon" href="{% static 'img/favicon.png' %}" type="image/png">
+  <link rel="apple-touch-icon" href="{% static 'img/icon-192.png' %}">
+  <link rel="stylesheet" href="{% static 'vendor/bootstrap.min.css' %}">
+  <link rel="stylesheet" href="{% static 'vendor/bootstrap-icons.min.css' %}">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+{% if user.is_authenticated %}
+  <nav class="navbar navbar-expand navbar-dark topbar sticky-top">
+    <div class="container-fluid">
+      <button class="btn btn-link text-white d-lg-none p-1 me-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#menuLateral" aria-label="Abrir menú">
+        <i class="bi bi-list fs-3"></i>
+      </button>
+      <a class="navbar-brand d-flex align-items-center gap-2" href="{% url 'dashboard' %}">
+        <span class="brand-mark">B</span>
+        <span class="d-flex flex-column lh-1">
+          <span class="brand-name">BOSSELLI</span>
+          <small class="brand-sub">Gestión · desde 1973</small>
+        </span>
+      </a>
+      <div class="ms-auto d-flex align-items-center gap-2">
+        <a href="{% url 'venta_nuevo' %}" class="btn btn-gold btn-sm d-none d-md-inline-flex align-items-center gap-1">
+          <i class="bi bi-plus-lg"></i> Nueva venta
+        </a>
+        <div class="dropdown">
+          <button class="btn btn-user dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+            <span class="avatar">{{ user.username|first|upper }}</span>
+            <span class="d-none d-sm-inline ms-1">{{ user.get_full_name|default:user.username }}</span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow">
+            <li><span class="dropdown-item-text small text-muted">{{ user.username }}{% if organizacion %} · {{ organizacion.nombre }}{% endif %}</span></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="{% url 'perfil' %}"><i class="bi bi-person-gear me-2"></i>Mi perfil</a></li>
+            {% if es_superuser %}
+              <li><a class="dropdown-item" href="/admin/" target="_blank" rel="noopener"><i class="bi bi-shield-lock me-2"></i>Panel de administración</a></li>
+            {% endif %}
+            <li><hr class="dropdown-divider"></li>
+            <li>
+              <form method="post" action="{% url 'logout' %}">
+                {% csrf_token %}
+                <button class="dropdown-item text-danger" type="submit"><i class="bi bi-box-arrow-right me-2"></i>Cerrar sesión</button>
+              </form>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  {% include "partials/sidebar.html" %}
+
+  <main class="main-content">
+    <div class="container-fluid py-3 py-lg-4 px-3 px-lg-4">
+      {% if messages %}
+        <div class="mb-3">
+          {% for message in messages %}
+            <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show shadow-sm" role="alert">
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+      {% block content %}{% endblock %}
+    </div>
+    <footer class="app-footer text-center text-muted small py-3">
+      Bosselli · Sastrería y moda clásica desde 1973 · Documento interno de gestión
+    </footer>
+  </main>
+{% else %}
+  {% block public_content %}{% endblock %}
+{% endif %}
+
+<script src="{% static 'vendor/bootstrap.bundle.min.js' %}"></script>
+<script src="{% static 'vendor/sweetalert2.all.min.js' %}"></script>
+<script src="{% static 'js/app.js' %}"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

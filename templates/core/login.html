@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Acceso · Bosselli Gestión{% endblock %}
+
+{% block public_content %}
+<div class="login-wrap">
+  <div class="login-card">
+    <div class="text-center mb-4">
+      <span class="brand-mark mb-2" style="width:54px;height:54px;font-size:1.7rem;">B</span>
+      <div class="brand-name" style="letter-spacing:.22em;">BOSSELLI</div>
+      <div class="brand-sub">Gestión interna · desde 1973</div>
+    </div>
+
+    {% if form.non_field_errors %}
+      <div class="alert alert-danger py-2 small">{{ form.non_field_errors }}</div>
+    {% endif %}
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags|default:'info' }} py-2 small">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <div class="mb-3">
+        <label class="form-label" for="{{ form.username.id_for_label }}">Usuario</label>
+        {{ form.username }}
+      </div>
+      <div class="mb-3">
+        <label class="form-label" for="{{ form.password.id_for_label }}">Contraseña</label>
+        <div class="input-group">
+          {{ form.password }}
+          <button class="btn btn-outline-secondary" type="button" data-toggle-password="#{{ form.password.id_for_label }}" aria-label="Mostrar contraseña">
+            <i class="bi bi-eye"></i>
+          </button>
+        </div>
+      </div>
+      <input type="hidden" name="next" value="{{ next }}">
+      <button class="btn btn-primary w-100 py-2" type="submit">
+        <i class="bi bi-box-arrow-in-right me-1"></i> Entrar
+      </button>
+    </form>
+
+    <p class="login-foot text-center mt-4 mb-0">
+      Acceso privado. Solo personal autorizado de Bosselli.<br>
+      Sastrería y moda clásica desde 1973.
+    </p>
+  </div>
+</div>
+{% endblock %}

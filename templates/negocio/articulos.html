@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% load core_extras %}
+{% block title %}Artículos · Bosselli{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1 class="page-title">Artículos</h1>
+    <p class="page-sub">Catálogo de prendas: camisas, trajes, chaquetas, pantalones, complementos…</p>
+  </div>
+  <a class="btn btn-gold btn-sm" href="{% url 'articulo_nuevo' %}"><i class="bi bi-plus-lg me-1"></i> Nuevo artículo</a>
+</div>
+
+<form class="filtros mb-3" method="get">
+  <div class="row g-2 align-items-end">
+    <div class="col-12 col-md-4">
+      <label class="form-label">Buscar</label>
+      <input class="form-control" name="q" value="{{ filtros.q }}" placeholder="Nombre, referencia o marca" data-auto-search>
+    </div>
+    <div class="col-6 col-md-3">
+      <label class="form-label">Familia</label>
+      <select class="form-select" name="familia" onchange="this.form.submit()">
+        <option value="">Todas</option>
+        {% for f in familias %}<option value="{{ f.pk }}" {% if filtros.familia == f.pk|stringformat:"s" %}selected{% endif %}>{{ f.nombre }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-6 col-md-3">
+      <label class="form-label">Stock bajo</label>
+      <select class="form-select" name="bajo" onchange="this.form.submit()">
+        <option value="">Todos</option>
+        <option value="1" {% if filtros.bajo == "1" %}selected{% endif %}>Solo bajo mínimo</option>
+      </select>
+    </div>
+    <div class="col-12 col-md-2 d-flex gap-2">
+      <button class="btn btn-primary btn-sm flex-fill" type="submit"><i class="bi bi-funnel me-1"></i> Filtrar</button>
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'articulos' %}">Limpiar</a>
+    </div>
+  </div>
+</form>
+
+<div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xl-4 g-3">
+  {% for a in page_obj %}
+    <div class="col">
+      <div class="card h-100">
+        <div class="position-relative">
+          {% if a.imagen %}
+            <img src="{{ a.imagen.url }}" class="card-img-top" alt="{{ a.nombre }}" style="height:180px;object-fit:cover;">
+          {% else %}
+            <div class="card-img-top bg-cream d-flex align-items-center justify-content-center" style="height:180px;">
+              <i class="bi bi-bag" style="font-size:3rem;color:#b08d57;"></i>
+            </div>
+          {% endif %}
+          {% if a.bajo_minimo %}<span class="badge text-bg-warning position-absolute top-0 end-0 m-2">Stock bajo</span>{% endif %}
+        </div>
+        <div class="card-body">
+          <div class="small text-muted">{{ a.referencia }} · {{ a.familia.nombre }}</div>
+          <h2 class="h6 mb-1"><a class="text-decoration-none text-dark" href="{% url 'articulo_detalle' a.pk %}">{{ a.nombre }}</a></h2>
+          <div class="d-flex justify-content-between align-items-center mt-2">
+            <span class="fw-bold">{{ a.pvp|euro }}</span>
+            <span class="small text-muted">stock {{ a.stock_total }}</span>
+          </div>
+          <div class="small text-muted mt-1">Coste {{ a.coste|euro }} · margen {{ a.margen|pct }}</div>
+        </div>
+        <div class="card-footer bg-transparent d-flex gap-2">
+          <a class="btn btn-sm btn-outline-primary flex-fill" href="{% url 'articulo_detalle' a.pk %}"><i class="bi bi-eye me-1"></i> Ver</a>
+          <a class="btn btn-sm btn-outline-secondary" href="{% url 'articulo_editar' a.pk %}"><i class="bi bi-pencil"></i></a>
+        </div>
+      </div>
+    </div>
+  {% empty %}
+    <div class="col-12">
+      <div class="card"><div class="card-body empty-state">
+        <i class="bi bi-bag"></i>No hay artículos. Crea el primero para empezar el catálogo.
+        <div class="mt-2"><a class="btn btn-gold btn-sm" href="{% url 'articulo_nuevo' %}">Nuevo artículo</a></div>
+      </div></div>
+    </div>
+  {% endfor %}
+</div>
+
+{% include "partials/paginacion.html" %}
+{% endblock %}

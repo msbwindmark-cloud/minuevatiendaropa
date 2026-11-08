@@ -1,0 +1,113 @@
+{% load static %}
+<div class="sidebar-section">Principal</div>
+<ul class="nav flex-column">
+  <li class="nav-item">
+    <a class="nav-link {% if request.path == '/' %}active{% endif %}" href="{% url 'dashboard' %}">
+      <i class="bi bi-speedometer2"></i> Panel
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link {% if '/articulos/' in request.path %}active{% endif %}" href="{% url 'articulos' %}">
+      <i class="bi bi-bag"></i> Artículos
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link {% if '/stock/' in request.path %}active{% endif %}" href="{% url 'stock_lista' %}">
+      <i class="bi bi-box-seam"></i> Stock
+    </a>
+  </li>
+</ul>
+
+<div class="sidebar-section">Comercial</div>
+<ul class="nav flex-column">
+  <li class="nav-item">
+    <a class="nav-link {% if '/ventas/' in request.path %}active{% endif %}" href="{% url 'ventas' %}">
+      <i class="bi bi-receipt"></i> Ventas
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link {% if '/compras/' in request.path %}active{% endif %}" href="{% url 'compras' %}">
+      <i class="bi bi-cart"></i> Compras
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link {% if '/gastos/' in request.path %}active{% endif %}" href="{% url 'gastos' %}">
+      <i class="bi bi-cash-coin"></i> Gastos
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link {% if '/clientes/' in request.path %}active{% endif %}" href="{% url 'clientes' %}">
+      <i class="bi bi-people"></i> Clientes
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link {% if '/proveedores/' in request.path %}active{% endif %}" href="{% url 'proveedores' %}">
+      <i class="bi bi-truck"></i> Proveedores
+    </a>
+  </li>
+</ul>
+
+<div class="sidebar-section">Equipo</div>
+<ul class="nav flex-column">
+  <li class="nav-item">
+    <a class="nav-link {% if '/empleados/' in request.path %}active{% endif %}" href="{% url 'empleados' %}">
+      <i class="bi bi-person-badge"></i> Empleados
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link {% if '/nominas/' in request.path %}active{% endif %}" href="{% url 'nominas' %}">
+      <i class="bi bi-wallet2"></i> Nóminas
+    </a>
+  </li>
+</ul>
+
+<div class="sidebar-section">Fiscal</div>
+<ul class="nav flex-column">
+  <li class="nav-item">
+    <a class="nav-link {% if '/facturas/' in request.path %}active{% endif %}" href="{% url 'facturas' %}">
+      <i class="bi bi-file-earmark-text"></i> Facturas
+      {% if facturas_pendientes %}<span class="badge rounded-pill text-bg-warning ms-auto">{{ facturas_pendientes }}</span>{% endif %}
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link {% if '/informes/' in request.path %}active{% endif %}" href="{% url 'informes' %}">
+      <i class="bi bi-graph-up-arrow"></i> Informes
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link {% if '/gestoria/' in request.path %}active{% endif %}" href="{% url 'gestoria' %}">
+      <i class="bi bi-folder2-open"></i> Gestoría
+    </a>
+  </li>
+</ul>
+
+{% if es_superuser or perfil.es_admin or perfil.es_gestor %}
+  <div class="sidebar-section">Sistema</div>
+  <ul class="nav flex-column">
+    {% if es_superuser or perfil.es_admin %}
+      <li class="nav-item">
+        <a class="nav-link {% if '/configuracion/' in request.path %}active{% endif %}" href="{% url 'configuracion' %}">
+          <i class="bi bi-gear"></i> Configuración
+        </a>
+      </li>
+    {% endif %}
+    <li class="nav-item">
+      <a class="nav-link {% if '/historial/' in request.path %}active{% endif %}" href="{% url 'historial' %}">
+        <i class="bi bi-clock-history"></i> Historial
+      </a>
+    </li>
+    {% if es_superuser %}
+      <li class="nav-item">
+        <a class="nav-link" href="/admin/" target="_blank" rel="noopener">
+          <i class="bi bi-shield-lock"></i> Admin <i class="bi bi-box-arrow-up-right small ms-auto"></i>
+        </a>
+      </li>
+    {% endif %}
+  </ul>
+{% endif %}
+
+<div class="sidebar-foot">
+  <a class="nav-link" href="{% url 'factura_subir' %}">
+    <i class="bi bi-cloud-arrow-up"></i> Subir factura
+  </a>
+</div>

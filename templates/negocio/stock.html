@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% load core_extras %}
+{% block title %}Stock · Bosselli{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1 class="page-title">Stock por tienda</h1>
+    <p class="page-sub">Unidades disponibles en Nervión y Porvenir. Total: {{ total_unidades }} unidades.</p>
+  </div>
+  <div class="d-flex gap-2">
+    <a class="btn btn-outline-primary btn-sm" href="{% url 'stock_ajuste' %}"><i class="bi bi-plus-slash-minus me-1"></i> Ajustar stock</a>
+    <a class="btn btn-outline-primary btn-sm" href="{% url 'stock_traspaso' %}"><i class="bi bi-arrow-left-right me-1"></i> Traspaso</a>
+  </div>
+</div>
+
+<form class="filtros mb-3" method="get">
+  <div class="row g-2 align-items-end">
+    <div class="col-12 col-md-5">
+      <label class="form-label">Buscar</label>
+      <input class="form-control" name="q" value="{{ filtros.q }}" placeholder="Artículo, referencia o talla" data-auto-search>
+    </div>
+    <div class="col-6 col-md-3">
+      <label class="form-label">Tienda</label>
+      <select class="form-select" name="tienda" onchange="this.form.submit()">
+        <option value="">Todas</option>
+        {% for t in tiendas %}<option value="{{ t.pk }}" {% if filtros.tienda == t.pk|stringformat:"s" %}selected{% endif %}>{{ t.nombre }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-6 col-md-2">
+      <label class="form-label">Bajo mínimo</label>
+      <select class="form-select" name="bajo" onchange="this.form.submit()">
+        <option value="">Todos</option>
+        <option value="1" {% if filtros.bajo == "1" %}selected{% endif %}>Solo bajos</option>
+      </select>
+    </div>
+    <div class="col-12 col-md-2 d-flex gap-2">
+      <button class="btn btn-primary btn-sm flex-fill" type="submit">Filtrar</button>
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'stock_lista' %}">Limpiar</a>
+    </div>
+  </div>
+</form>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Referencia</th><th>Artículo</th><th>Talla / Color</th><th>Tienda</th><th class="text-end">Cantidad</th><th class="text-end d-none d-md-table-cell">Valor coste</th></tr></thead>
+      <tbody>
+        {% for s in page_obj %}
+          <tr>
+            <td class="small text-muted">{{ s.variante.articulo.referencia }}</td>
+            <td><a class="text-decoration-none" href="{% url 'articulo_detalle' s.variante.articulo.pk %}">{{ s.variante.articulo.nombre }}</a></td>
+            <td>{{ s.variante.talla }}{% if s.variante.color %} · {{ s.variante.color }}{% endif %}</td>
+            <td><span class="badge badge-soft">{{ s.tienda.nombre }}</span></td>
+            <td class="text-end num fw-bold {% if s.cantidad <= s.variante.articulo.stock_minimo %}text-danger{% endif %}">{{ s.cantidad }}</td>
+            <td class="text-end num d-none d-md-table-cell">{{ s.valor_coste|euro }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="6" class="empty-state"><i class="bi bi-box-seam"></i>No hay stock registrado.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% include "partials/paginacion.html" %}
+{% endblock %}
