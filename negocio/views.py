@@ -1643,7 +1643,6 @@ def gestoria_zip(request):
     resp["Content-Disposition"] = f'attachment; filename="Gestoria_{anyo}_T{trimestre}.zip"'
     registrar(request, "exportar", objeto_repr=f"Paquete gestor√≠a {trimestre}T {anyo}")
     return resp
-'''
 
 # ---------------------------------------------------------------------------
 # Backup diario (datos completos)
@@ -1660,7 +1659,7 @@ def backup(request):
 
 
 def _generar_backup_zip(org):
-    """Genera un ZIP con dump JSON + Excel de todos los datos de la organizaciÛn."""
+    """Genera un ZIP con dump JSON + Excel de todos los datos de la organizaci√≥n."""
     import io
     import json
     import zipfile
@@ -1809,7 +1808,7 @@ def backup_email(request):
     if extra:
         emails = [e.strip() for e in extra.split(",") if e.strip()]
     if not emails:
-        messages.error(request, "No hay emails configurados para el backup. AÒadelos en Ajustes (admin).")
+        messages.error(request, "No hay emails configurados para el backup. A√±adelos en Ajustes (admin).")
         return redirect("backup")
     contenido, fecha = _generar_backup_zip(org)
     email = EmailMessage(

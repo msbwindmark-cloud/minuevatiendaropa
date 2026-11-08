@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% load core_extras %}
+{% block title %}Backup · Bosselli{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1 class="page-title">Backup de datos</h1>
+    <p class="page-sub">Copia de seguridad completa de toda la base de datos. Descárgala o envíala por email.</p>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-12 col-lg-6">
+    <div class="card h-100">
+      <div class="card-header"><i class="bi bi-download text-gold me-1"></i> Descargar backup</div>
+      <div class="card-body">
+        <p class="small text-muted">
+          Genera un ZIP con:
+        </p>
+        <ul class="small text-muted">
+          <li><strong>json/</strong> — dump de cada modelo (re-importable con <code>loaddata</code>).</li>
+          <li><strong>json/backup_completo.json</strong> — todos los datos en un solo archivo.</li>
+          <li><strong>excel/</strong> — resumen en Excel para consulta humana.</li>
+          <li><strong>LEEME.txt</strong> — instrucciones de restauración.</li>
+        </ul>
+        <a class="btn btn-gold w-100" href="{% url 'backup_descargar' %}">
+          <i class="bi bi-download me-1"></i> Descargar ZIP ahora
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-6">
+    <div class="card h-100">
+      <div class="card-header"><i class="bi bi-envelope text-gold me-1"></i> Enviar por email</div>
+      <div class="card-body">
+        <p class="small text-muted">
+          Envía el mismo ZIP a la lista de emails configurada. Útil para el cierre del día.
+        </p>
+        {% if emails %}
+          <div class="mb-3">
+            <div class="small fw-semibold mb-1">Emails configurados:</div>
+            {% for e in emails %}<span class="badge badge-soft me-1">{{ e }}</span>{% endfor %}
+          </div>
+        {% else %}
+          <div class="alert alert-warning small">
+            No hay emails configurados. Añádelos en el panel de administración
+            (Ajustes → emails_backup, separados por coma).
+          </div>
+        {% endif %}
+        <form method="post" action="{% url 'backup_email' %}">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label">Emails adicionales (opcional)</label>
+            <input class="form-control" type="text" name="emails" placeholder="email1@ejemplo.com, email2@ejemplo.com">
+            <div class="helptext">Si se rellena, se usan estos en lugar de los configurados.</div>
+          </div>
+          <button class="btn btn-primary w-100" type="submit">
+            <i class="bi bi-envelope me-1"></i> Enviar backup por email
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="alert alert-light border mt-4 small">
+  <i class="bi bi-info-circle me-1"></i>
+  <strong>Restauración:</strong> si algún día se estropea la página, puedes
+  recrear la base de datos con <code>python manage.py loaddata json/backup_completo.json</code>
+  sobre una instalación limpia. Los archivos subidos (facturas, imágenes) están
+  en la carpeta <code>media/</code> y deben copiarse aparte.
+</div>
+{% endblock %}
