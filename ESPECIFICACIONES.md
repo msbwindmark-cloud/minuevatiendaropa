@@ -283,7 +283,7 @@ python manage.py runserver 0.0.0.0:8000
 
 ---
 
-## 14. Estandares de UI para listados (obligatorio)
+## 22. Estandares de UI para listados (obligatorio)
 
 Todos los listados de la aplicacion deben cumplir:
 
@@ -295,9 +295,10 @@ Todos los listados de la aplicacion deben cumplir:
 2. **Ordenacion**: los listados deben mostrar los registros mas recientes
    primero (-fecha, -id o -creado).
 
-3. **Paginacion**: minimo 5 registros por pagina. Se incluye
+3. **Paginacion**: minimo 5 registros por pagina (default 5). Se incluye
    partials/paginacion.html en todos los listados. La paginacion muestra
-   navegacion anterior/siguiente y numero de pagina.
+   navegacion anterior/siguiente, numero de pagina y un selector para
+   cambiar la cantidad (5, 10, 15, 25, 50).
 
 4. **Opcion mostrar mas**: la paginacion incluye enlace a la siguiente
    pagina y muestra el total de registros.
