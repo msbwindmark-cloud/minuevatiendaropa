@@ -16,6 +16,7 @@
 }
 
 * { -webkit-tap-highlight-color: transparent; }
+html { scroll-behavior: smooth; }
 
 body {
   font-family: "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
