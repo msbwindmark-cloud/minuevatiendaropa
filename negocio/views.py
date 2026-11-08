@@ -100,10 +100,24 @@ def _rango(request, qs, campo="fecha"):
     return qs, desde, hasta
 
 
-def _pagin(request, qs, por_pagina=20):
+OPCIONES_POR_PAGINA = [5, 10, 15, 25, 50]
+
+
+def _por_pagina(request, por_pagina=5):
+    try:
+        val = int(request.GET.get("por_pagina", por_pagina))
+    except (ValueError, TypeError):
+        val = por_pagina
+    if val not in OPCIONES_POR_PAGINA:
+        val = por_pagina if por_pagina in OPCIONES_POR_PAGINA else 10
+    return val
+
+
+def _pagin(request, qs, por_pagina=10):
     from django.core.paginator import Paginator
 
-    return Paginator(qs, por_pagina).get_page(request.GET.get("page"))
+    pp = _por_pagina(request, por_pagina)
+    return Paginator(qs, pp).get_page(request.GET.get("page"))
 
 
 def _contexto_lista(request, page_obj, **extra):
@@ -281,7 +295,7 @@ def articulos(request):
     if bajo == "1":
         qs = qs.filter(stock_total_db__lte=F("stock_minimo"))
     qs = qs.order_by("nombre")
-    page_obj = _pagin(request, qs, 24)
+    page_obj = _pagin(request, qs, 5)
     return render(
         request,
         "negocio/articulos.html",
@@ -411,7 +425,7 @@ def stock_lista(request):
     if bajo == "1":
         qs = qs.filter(cantidad__lte=F("variante__articulo__stock_minimo"))
     qs = qs.order_by("variante__articulo__nombre", "variante__talla")
-    page_obj = _pagin(request, qs, 30)
+    page_obj = _pagin(request, qs, 5)
     total_unidades = qs.aggregate(s=Sum("cantidad"))["s"] or 0
     return render(
         request,
@@ -501,7 +515,7 @@ def clientes(request):
             | Q(email__icontains=q) | Q(telefono__icontains=q)
         )
     qs = qs.order_by("nombre", "apellidos")
-    return render(request, "negocio/clientes.html", _contexto_lista(request, _pagin(request, qs, 25)))
+    return render(request, "negocio/clientes.html", _contexto_lista(request, _pagin(request, qs, 5)))
 
 
 @login_required
@@ -540,7 +554,7 @@ def proveedores(request):
     q = request.GET.get("q", "").strip()
     if q:
         qs = qs.filter(Q(nombre__icontains=q) | Q(cif__icontains=q) | Q(email__icontains=q))
-    return render(request, "negocio/proveedores.html", _contexto_lista(request, _pagin(request, qs.order_by("nombre"), 25)))
+    return render(request, "negocio/proveedores.html", _contexto_lista(request, _pagin(request, qs.order_by("nombre"), 5)))
 
 
 @login_required
@@ -593,7 +607,7 @@ def ventas(request):
     if q:
         qs = qs.filter(Q(numero__icontains=q) | Q(cliente__nombre__icontains=q) | Q(cliente__apellidos__icontains=q))
     total = qs.aggregate(s=Sum("total"))["s"] or 0
-    page_obj = _pagin(request, qs.order_by("-fecha", "-id"), 25)
+    page_obj = _pagin(request, qs.order_by("-fecha", "-id"), 5)
     return render(
         request,
         "negocio/ventas.html",
@@ -714,7 +728,7 @@ def compras(request):
     if q:
         qs = qs.filter(Q(numero__icontains=q) | Q(proveedor__nombre__icontains=q))
     total = qs.aggregate(s=Sum("total"))["s"] or 0
-    page_obj = _pagin(request, qs.order_by("-fecha", "-id"), 25)
+    page_obj = _pagin(request, qs.order_by("-fecha", "-id"), 5)
     return render(
         request,
         "negocio/compras.html",
@@ -850,7 +864,7 @@ def gastos(request):
     if q:
         qs = qs.filter(Q(descripcion__icontains=q) | Q(proveedor_nombre__icontains=q) | Q(proveedor__nombre__icontains=q))
     total = qs.aggregate(s=Sum("total"))["s"] or 0
-    page_obj = _pagin(request, qs.order_by("-fecha", "-id"), 25)
+    page_obj = _pagin(request, qs.order_by("-fecha", "-id"), 5)
     return render(
         request,
         "negocio/gastos.html",
@@ -928,7 +942,7 @@ def empleados(request):
         qs = qs.filter(activo=True)
     elif activo == "0":
         qs = qs.filter(activo=False)
-    return render(request, "negocio/empleados.html", _contexto_lista(request, _pagin(request, qs, 25)))
+    return render(request, "negocio/empleados.html", _contexto_lista(request, _pagin(request, qs, 5)))
 
 
 @login_required
@@ -974,7 +988,7 @@ def nominas(request):
     if estado:
         qs = qs.filter(estado=estado)
     total = qs.aggregate(s=Sum("neto"))["s"] or 0
-    page_obj = _pagin(request, qs.order_by("-periodo", "empleado__apellidos"), 25)
+    page_obj = _pagin(request, qs.order_by("-periodo", "empleado__apellidos"), 5)
     return render(
         request,
         "negocio/nominas.html",
@@ -1029,7 +1043,7 @@ def facturas(request):
     return render(
         request,
         "negocio/facturas.html",
-        _contexto_lista(request, _pagin(request, qs, 20)),
+        _contexto_lista(request, _pagin(request, qs, 5)),
     )
 
 
@@ -1914,7 +1928,7 @@ from .models import (
 def arqueos(request):
     qs = ArqueoCaja.all_objects.filter(organizacion=_org(request)).select_related("tienda")
     qs = qs.order_by("-fecha", "-id")
-    return render(request, "negocio/arqueos.html", _contexto_lista(request, _pagin(request, qs, 20)))
+    return render(request, "negocio/arqueos.html", _contexto_lista(request, _pagin(request, qs, 5)))
 
 
 @login_required
@@ -1968,7 +1982,7 @@ def arqueo_borrar(request, pk):
 def devoluciones(request):
     qs = Devolucion.all_objects.filter(organizacion=_org(request)).select_related("venta", "venta__cliente")
     qs = qs.order_by("-fecha", "-id")
-    return render(request, "negocio/devoluciones.html", _contexto_lista(request, _pagin(request, qs, 20)))
+    return render(request, "negocio/devoluciones.html", _contexto_lista(request, _pagin(request, qs, 5)))
 
 
 @login_required
@@ -2024,7 +2038,7 @@ def devolucion_borrar(request, pk):
 def inventarios(request):
     qs = InventarioFisico.all_objects.filter(organizacion=_org(request)).select_related("tienda")
     qs = qs.order_by("-fecha", "-id")
-    return render(request, "negocio/inventarios.html", _contexto_lista(request, _pagin(request, qs, 20)))
+    return render(request, "negocio/inventarios.html", _contexto_lista(request, _pagin(request, qs, 5)))
 
 
 @login_required
@@ -2156,7 +2170,7 @@ def medida_form(request, cliente_pk, pk=None):
 def eventos(request):
     qs = Evento.all_objects.filter(organizacion=_org(request)).select_related("tienda")
     qs = qs.order_by("fecha")
-    return render(request, "negocio/eventos.html", _contexto_lista(request, _pagin(request, qs, 30)))
+    return render(request, "negocio/eventos.html", _contexto_lista(request, _pagin(request, qs, 5)))
 
 
 @login_required

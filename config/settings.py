@@ -17,7 +17,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 env = environ.Env(
     DJANGO_DEBUG=(bool, True),
-    DJANGO_ALLOWED_HOSTS=(list, ["localhost", "127.0.0.1"]),
+    DJANGO_ALLOWED_HOSTS=(list, ["localhost", "127.0.0.1", "minuevatiendaropa.pythonanywhere.com"]),
     OCR_ACTIVO=(bool, True),
 )
 environ.Env.read_env(BASE_DIR / ".env", overwrite=True)

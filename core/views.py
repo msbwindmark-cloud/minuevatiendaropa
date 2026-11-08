@@ -66,7 +66,13 @@ def historial(request):
     if hasta:
         qs = qs.filter(fecha__date__lte=hasta)
 
-    paginator = Paginator(qs, 50)
+    try:
+        por_pagina = int(request.GET.get("por_pagina", 20))
+    except (ValueError, TypeError):
+        por_pagina = 5
+    if por_pagina not in (5, 10, 15, 25, 50):
+        por_pagina = 5
+    paginator = Paginator(qs, por_pagina)
     page = paginator.get_page(request.GET.get("page"))
     modelos = (
         Auditoria.objects.exclude(content_type__isnull=True)
