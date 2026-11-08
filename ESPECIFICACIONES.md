@@ -18,6 +18,7 @@ Estos puntos NO son opcionales:
 4. **Multi-tenant** con aislamiento por organización y tests (sección 7).
 5. **UI mobile-first + PWA** (sección 13).
 6. **Archivo `.env`** con todas las variables de entorno (sección 3.1). Obligatorio en todo proyecto. Incluir `.env.example` en el repositorio (sin secretos).
+7. **Sistema de backup y restauración** (sección 23). Obligatorio en todo proyecto.
 
 ## 3.1 Archivo .env (obligatorio)
 
@@ -278,6 +279,8 @@ python manage.py runserver 0.0.0.0:8000
 - [ ] Tests de aislamiento entre organizaciones y de auditoría
 - [ ] `.env` con todas las variables (incluida `DJANGO_DEBUG`)
 - [ ] PWA (manifest, `/sw.js`, iconos) y diseño mobile-first
+- [ ] Sistema de backup (descarga + email) y `RESTAURAR.md`
+- [ ] `.env.example` en el repositorio
 - [ ] `seed.py` y manual de usuario
 
 
@@ -308,3 +311,43 @@ Todos los listados de la aplicacion deben cumplir:
 
 6. **Acciones rapidas**: cada fila debe tener botones de ver/editar/borrar
    con iconos (Bootstrap Icons) y confirmacion SweetAlert2 para borrados.
+
+
+## 23. Backup y restauración (obligatorio)
+
+Todo proyecto debe incluir un sistema de backup y restauración de la base de datos.
+
+### 23.1 Funcionalidad de backup
+
+- **Descarga ZIP**: genera un archivo ZIP con:
+  - `json/`: dump de cada modelo en formato JSON (re-importable con `loaddata`).
+  - `json/backup_completo.json`: todos los datos en un solo archivo.
+  - `excel/`: resumen en Excel para consulta humana.
+  - `LEEME.txt`: instrucciones de restauración.
+- **Envío por email**: envía el mismo ZIP a la lista de emails configurada.
+- **Configuración**: lista de emails en `Ajuste.emails_backup` (separados por coma).
+
+### 23.2 Implementación
+
+- Vista `backup_descargar`: genera y descarga el ZIP.
+- Vista `backup_email`: genera y envía el ZIP por email.
+- Función `_generar_backup_zip(org)`: serializa todos los modelos con `django.core.serializers`.
+- Usa `use_natural_foreign_keys=True` para compatibilidad.
+
+### 23.3 Restauración
+
+- Desde ZIP: `python manage.py loaddata json/backup_completo.json`
+- Desde SQLite: copiar `db.sqlite3` directamente.
+- Documentar en `RESTAURAR.md` con pasos detallados.
+
+### 23.4 Archivos requeridos
+
+- `RESTAURAR.md`: guía de restauración completa.
+- `.env.example`: plantilla de variables de entorno.
+
+### 23.5 Checklist adicional
+
+- [ ] Sistema de backup implementado (descarga + email)
+- [ ] `RESTAURAR.md` creado con pasos detallados
+- [ ] `.env.example` incluido en el repositorio
+- [ ] Backup probado (descarga y restauración)
