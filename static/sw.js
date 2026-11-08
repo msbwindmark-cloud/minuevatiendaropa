@@ -1,4 +1,4 @@
-const CACHE = "bosselli-v2";
+const CACHE = "bosselli-v3";
 const ASSETS = [
   "/static/css/app.css",
   "/static/js/app.js",

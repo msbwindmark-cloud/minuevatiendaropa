@@ -119,37 +119,26 @@
         navigator.serviceWorker.register("/sw.js").catch(() => {});
       });
     }
-  });
 
-  // Guardar y restaurar posicion de scroll del sidebar
-  const sidebarInner = document.querySelector(".sidebar-inner");
-  if (sidebarInner) {
-    const savedScroll = sessionStorage.getItem("sidebarScroll");
-    if (savedScroll) sidebarInner.scrollTop = parseInt(savedScroll, 10);
-    sidebarInner.addEventListener("scroll", function () {
-      sessionStorage.setItem("sidebarScroll", sidebarInner.scrollTop);
-    }, { passive: true });
-  }
+    // Guardar y restaurar posicion de scroll del sidebar
+    const sidebarInner = document.querySelector(".sidebar-inner");
+    if (sidebarInner) {
+      const savedScroll = sessionStorage.getItem("sidebarScroll");
+      if (savedScroll) sidebarInner.scrollTop = parseInt(savedScroll, 10);
+      sidebarInner.addEventListener("scroll", function () {
+        sessionStorage.setItem("sidebarScroll", sidebarInner.scrollTop);
+      }, { passive: true });
+    }
 
-  // Cerrar offcanvas al pulsar un enlace (movil)
-  document.querySelectorAll(".sidebar-offcanvas .nav-link").forEach(function (link) {
-    link.addEventListener("click", function () {
-      const oc = document.getElementById("menuLateral");
-      if (oc && window.bootstrap && window.bootstrap.Offcanvas) {
-        const instance = window.bootstrap.Offcanvas.getInstance(oc);
-        if (instance) instance.hide();
-      }
+    // Cerrar offcanvas al pulsar un enlace (movil)
+    document.querySelectorAll(".sidebar-offcanvas .nav-link").forEach(function (link) {
+      link.addEventListener("click", function () {
+        const oc = document.getElementById("menuLateral");
+        if (oc && window.bootstrap && window.bootstrap.Offcanvas) {
+          const instance = window.bootstrap.Offcanvas.getInstance(oc);
+          if (instance) instance.hide();
+        }
+      });
     });
   });
-
-  // Recordar posicion de scroll de la pagina
-  const pageKey = "pageScroll_" + location.pathname;
-  const savedPage = sessionStorage.getItem(pageKey);
-  if (savedPage && document.referrer && document.referrer.indexOf(location.host) !== -1) {
-    window.scrollTo(0, parseInt(savedPage, 10));
-  }
-  window.addEventListener("scroll", function () {
-    sessionStorage.setItem(pageKey, window.scrollY);
-  }, { passive: true });
-
 })();
