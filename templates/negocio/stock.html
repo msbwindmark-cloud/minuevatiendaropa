@@ -39,7 +39,12 @@
       <a class="btn btn-outline-secondary btn-sm" href="{% url 'stock_lista' %}">Limpiar</a>
     </div>
   </div>
-</form>
+</form></form>
+
+<div class="d-flex justify-content-end gap-2 mb-3">
+  <span class="small text-muted align-self-center">Exportar filtrado:</span>
+  {% include "partials/exportar_botones.html" with tipo="stock" %}
+</div>
 
 <div class="card">
   <div class="table-responsive">

@@ -36,7 +36,12 @@
       <a class="btn btn-outline-secondary btn-sm" href="{% url 'articulos' %}">Limpiar</a>
     </div>
   </div>
-</form>
+</form></form>
+
+<div class="d-flex justify-content-end gap-2 mb-3">
+  <span class="small text-muted align-self-center">Exportar filtrado:</span>
+  {% include "partials/exportar_botones.html" with tipo="articulos" %}
+</div>
 
 <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xl-4 g-3">
   {% for a in page_obj %}

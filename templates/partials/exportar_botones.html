@@ -1,0 +1,8 @@
+<div class="d-flex gap-2">
+  <a class="btn btn-sm btn-outline-primary" href="{% url 'exportar' tipo 'pdf' %}?{{ request.GET.urlencode }}" title="Exportar PDF">
+    <i class="bi bi-file-pdf"></i>
+  </a>
+  <a class="btn btn-sm btn-outline-success" href="{% url 'exportar' tipo 'xlsx' %}?{{ request.GET.urlencode }}" title="Exportar Excel">
+    <i class="bi bi-file-excel"></i>
+  </a>
+</div>

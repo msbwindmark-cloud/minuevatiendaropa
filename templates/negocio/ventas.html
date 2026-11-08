@@ -56,7 +56,12 @@
     <button class="btn btn-primary btn-sm" type="submit"><i class="bi bi-funnel me-1"></i> Filtrar</button>
     <a class="btn btn-outline-secondary btn-sm" href="{% url 'ventas' %}">Limpiar</a>
   </div>
-</form>
+</form></form>
+
+<div class="d-flex justify-content-end gap-2 mb-3">
+  <span class="small text-muted align-self-center">Exportar filtrado:</span>
+  {% include "partials/exportar_botones.html" with tipo="ventas" %}
+</div>
 
 <div class="card">
   <div class="table-responsive">
