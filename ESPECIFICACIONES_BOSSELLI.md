@@ -77,6 +77,16 @@ chaqués, cazadoras, jerseys, corbatas, pañuelos, complementos).
 - Tipografía: Georgia para títulos, Segoe UI para cuerpo.
 - Layout con sidebar (desktop) y offcanvas (móvil). Mobile-first.
 
+## 7b. Archivo .env
+
+El proyecto incluye `.env` (no se sube a git) y `.env.example` (plantilla).
+Variables obligatorias:
+- `DJANGO_DEBUG`, `DJANGO_SECRET_KEY`, `DJANGO_ALLOWED_HOSTS`
+- `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_USE_TLS`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`
+- `DEFAULT_FROM_EMAIL`
+
+Los emails de backup y notificaciones se configuran en Admin → Ajustes.
+
 ## 8. Notas de producción
 
 - Cambiar `DJANGO_SECRET_KEY` y `DJANGO_DEBUG=0`.

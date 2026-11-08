@@ -17,6 +17,27 @@ Estos puntos NO son opcionales:
 3. **Modelo de auditoría** que registre todo lo que se hace en la aplicación (sección 6).
 4. **Multi-tenant** con aislamiento por organización y tests (sección 7).
 5. **UI mobile-first + PWA** (sección 13).
+6. **Archivo `.env`** con todas las variables de entorno (sección 3.1). Obligatorio en todo proyecto. Incluir `.env.example` en el repositorio (sin secretos).
+
+## 3.1 Archivo .env (obligatorio)
+
+Todo proyecto debe incluir un archivo `.env` en la raíz con, al menos:
+
+```
+DJANGO_DEBUG=True
+DJANGO_SECRET_KEY=...
+DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_USE_TLS=True
+EMAIL_HOST_USER=...
+EMAIL_HOST_PASSWORD=...
+DEFAULT_FROM_EMAIL=...
+```
+
+- El `.env` real **nunca** se sube a git (debe estar en `.gitignore`).
+- Se incluye un `.env.example` en el repositorio como plantilla (sin secretos).
+- En PythonAnywhere, las variables se configuran en el panel de la web app o en un archivo `.env` en el directorio del proyecto.
 
 ## 3. Stack
 - Python 3.11+ (probado con 3.13)
