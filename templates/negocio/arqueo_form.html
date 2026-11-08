@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% load core_extras %}
+{% block title %}Arqueo de caja · Bosselli{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1 class="page-title">{% if obj %}Editar arqueo{% else %}Nuevo arqueo{% endif %}</h1>
+    <p class="page-sub">Cuenta el efectivo, tarjeta, bizum y transferencia de la caja.</p>
+  </div>
+  <a class="btn btn-outline-secondary btn-sm" href="{% url 'arqueos' %}"><i class="bi bi-arrow-left me-1"></i> Volver</a>
+</div>
+
+<form method="post" novalidate>
+  {% csrf_token %}
+  <div class="card mb-3">
+    <div class="card-header">Datos del arqueo</div>
+    <div class="card-body">
+      <div class="row g-3">
+        {% for field in form %}
+          <div class="col-12 col-md-4">
+            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.help_text %}<div class="helptext">{{ field.help_text }}</div>{% endif %}
+            {% for e in field.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  {% if esperado %}
+  <div class="card mb-3">
+    <div class="card-header"><i class="bi bi-calculator text-gold me-1"></i> Valores esperados (según ventas del día)</div>
+    <div class="card-body">
+      <div class="row text-center">
+        <div class="col-3"><div class="small text-muted">Efectivo</div><div class="fw-bold">{{ esperado.efectivo_esperado|euro }}</div></div>
+        <div class="col-3"><div class="small text-muted">Tarjeta</div><div class="fw-bold">{{ esperado.tarjeta_esperada|euro }}</div></div>
+        <div class="col-3"><div class="small text-muted">Bizum</div><div class="fw-bold">{{ esperado.bizum_esperado|euro }}</div></div>
+        <div class="col-3"><div class="small text-muted">Transferencia</div><div class="fw-bold">{{ esperado.transferencia_esperada|euro }}</div></div>
+      </div>
+      <div class="text-center mt-2 text-muted small">Total esperado: <strong>{{ esperado.total_esperado|euro }}</strong></div>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="d-flex gap-2">
+    <button class="btn btn-primary" type="submit"><i class="bi bi-check2 me-1"></i> Guardar arqueo</button>
+    <a class="btn btn-outline-secondary" href="{% url 'arqueos' %}">Cancelar</a>
+  </div>
+</form>
+{% endblock %}

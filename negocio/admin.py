@@ -1,15 +1,22 @@
 from django.contrib import admin
 
 from .models import (
+    ArqueoCaja,
     Articulo,
     Cliente,
     Compra,
+    Devolucion,
     Empleado,
+    Evento,
     FacturaImportada,
     Familia,
     Gasto,
+    InventarioFisico,
     LineaCompra,
+    LineaDevolucion,
+    LineaInventario,
     LineaVenta,
+    MedidaCliente,
     MovimientoStock,
     Nomina,
     Proveedor,
@@ -170,3 +177,49 @@ class FacturaImportadaAdmin(admin.ModelAdmin):
     search_fields = ("texto", "datos")
     readonly_fields = ("texto", "datos", "error", "procesada", "creado", "actualizado")
     date_hierarchy = "creado"
+
+@admin.register(ArqueoCaja)
+class ArqueoCajaAdmin(admin.ModelAdmin):
+    list_display = ("fecha", "tienda", "total_contado", "total_esperado", "diferencia", "estado")
+    list_filter = ("tienda", "estado", "fecha")
+    date_hierarchy = "fecha"
+
+
+@admin.register(Devolucion)
+class DevolucionAdmin(admin.ModelAdmin):
+    list_display = ("pk", "venta", "fecha", "estado", "total")
+    list_filter = ("estado", "fecha")
+    date_hierarchy = "fecha"
+
+
+@admin.register(LineaDevolucion)
+class LineaDevolucionAdmin(admin.ModelAdmin):
+    list_display = ("devolucion", "descripcion", "cantidad", "precio_unitario")
+
+
+@admin.register(InventarioFisico)
+class InventarioFisicoAdmin(admin.ModelAdmin):
+    list_display = ("fecha", "tienda", "estado", "completado")
+    list_filter = ("estado", "tienda", "fecha")
+    date_hierarchy = "fecha"
+
+
+@admin.register(LineaInventario)
+class LineaInventarioAdmin(admin.ModelAdmin):
+    list_display = ("inventario", "variante", "cantidad_sistema", "cantidad_contada", "diferencia")
+
+
+@admin.register(MedidaCliente)
+class MedidaClienteAdmin(admin.ModelAdmin):
+    list_display = ("cliente", "fecha", "pecho", "cintura", "cadera", "cuello")
+    list_filter = ("fecha",)
+    search_fields = ("cliente__nombre", "cliente__apellidos")
+    date_hierarchy = "fecha"
+
+
+@admin.register(Evento)
+class EventoAdmin(admin.ModelAdmin):
+    list_display = ("fecha", "titulo", "tipo", "tienda")
+    list_filter = ("tipo", "tienda", "fecha")
+    search_fields = ("titulo", "descripcion")
+    date_hierarchy = "fecha"

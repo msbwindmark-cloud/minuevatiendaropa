@@ -16,6 +16,16 @@
       <i class="bi bi-box-seam"></i> Stock
     </a>
   </li>
+  <li class="nav-item">
+    <a class="nav-link {% if '/inventarios/' in request.path %}active{% endif %}" href="{% url 'inventarios' %}">
+      <i class="bi bi-clipboard-check"></i> Inventario físico
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link {% if '/etiquetas/' in request.path %}active{% endif %}" href="{% url 'etiquetas' %}">
+      <i class="bi bi-tag"></i> Etiquetas
+    </a>
+  </li>
 </ul>
 
 <div class="sidebar-section">Comercial</div>
@@ -23,6 +33,11 @@
   <li class="nav-item">
     <a class="nav-link {% if '/ventas/' in request.path %}active{% endif %}" href="{% url 'ventas' %}">
       <i class="bi bi-receipt"></i> Ventas
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link {% if '/devoluciones/' in request.path %}active{% endif %}" href="{% url 'devoluciones' %}">
+      <i class="bi bi-arrow-return-left"></i> Devoluciones
     </a>
   </li>
   <li class="nav-item">
@@ -63,6 +78,26 @@
 
 <div class="sidebar-section">Fiscal</div>
 <ul class="nav flex-column">
+  <li class="nav-item">
+    <a class="nav-link {% if '/arqueos/' in request.path %}active{% endif %}" href="{% url 'arqueos' %}">
+      <i class="bi bi-calculator"></i> Arqueo de caja
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link {% if '/eventos/' in request.path %}active{% endif %}" href="{% url 'eventos' %}">
+      <i class="bi bi-calendar-event"></i> Eventos
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link {% if '/comparativa/' in request.path %}active{% endif %}" href="{% url 'comparativa' %}">
+      <i class="bi bi-bar-chart"></i> Comparativa tiendas
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link {% if '/reportes/' in request.path %}active{% endif %}" href="{% url 'reportes_avanzados' %}">
+      <i class="bi bi-graph-up"></i> Reportes avanzados
+    </a>
+  </li>
   <li class="nav-item">
     <a class="nav-link {% if '/facturas/' in request.path %}active{% endif %}" href="{% url 'facturas' %}">
       <i class="bi bi-file-earmark-text"></i> Facturas

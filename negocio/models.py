@@ -628,3 +628,183 @@ class FacturaImportada(TenantModel):
         self.procesada = timezone.now()
         self.save(update_fields=["texto", "datos", "error", "tipo", "procesada", "actualizado"])
         return datos
+
+# ---------------------------------------------------------------------------
+# Arqueo de caja diario
+# ---------------------------------------------------------------------------
+class ArqueoCaja(TenantModel):
+    ESTADOS = [("borrador", "Borrador"), ("cerrado", "Cerrado")]
+    fecha = models.DateField(default=timezone.localdate)
+    tienda = models.ForeignKey(Tienda, on_delete=models.PROTECT, related_name="arqueos")
+    efectivo_contado = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    tarjeta_contado = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    bizum_contado = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    transferencia_contado = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    efectivo_esperado = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    tarjeta_esperada = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    bizum_esperado = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    transferencia_esperada = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    diferencia = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    estado = models.CharField(max_length=10, choices=ESTADOS, default="borrador")
+    notas = models.TextField(blank=True)
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Arqueo de caja"
+        verbose_name_plural = "Arqueos de caja"
+        ordering = ["-fecha", "-id"]
+        unique_together = [("tienda", "fecha")]
+
+    def __str__(self):
+        return "Arqueo %s %s" % (self.tienda.nombre, self.fecha.strftime("%d/%m/%Y"))
+
+    @property
+    def total_contado(self):
+        return redondear(self.efectivo_contado + self.tarjeta_contado + self.bizum_contado + self.transferencia_contado)
+
+    @property
+    def total_esperado(self):
+        return redondear(self.efectivo_esperado + self.tarjeta_esperada + self.bizum_esperado + self.transferencia_esperada)
+
+    def calcular_esperado(self):
+        from django.db.models import Sum
+        ventas = Venta.all_objects.filter(organizacion=self.organizacion, tienda=self.tienda, fecha=self.fecha).exclude(estado="anulada")
+        self.efectivo_esperado = ventas.filter(forma_pago="efectivo").aggregate(s=Sum("total"))["s"] or 0
+        self.tarjeta_esperada = ventas.filter(forma_pago="tarjeta").aggregate(s=Sum("total"))["s"] or 0
+        self.bizum_esperado = ventas.filter(forma_pago="bizum").aggregate(s=Sum("total"))["s"] or 0
+        self.transferencia_esperada = ventas.filter(forma_pago="transferencia").aggregate(s=Sum("total"))["s"] or 0
+        self.diferencia = redondear(self.total_contado - self.total_esperado)
+
+
+class Devolucion(TenantModel):
+    ESTADOS = [("pendiente", "Pendiente"), ("procesada", "Procesada"), ("anulada", "Anulada")]
+    venta = models.ForeignKey(Venta, on_delete=models.PROTECT, related_name="devoluciones")
+    fecha = models.DateField(default=timezone.localdate)
+    motivo = models.CharField(max_length=255, blank=True)
+    estado = models.CharField(max_length=12, choices=ESTADOS, default="pendiente")
+    total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    notas = models.TextField(blank=True)
+    archivo = models.FileField(upload_to="devoluciones/%Y/%m/", blank=True, null=True)
+
+    class Meta:
+        verbose_name = "Devolucion"
+        verbose_name_plural = "Devoluciones"
+        ordering = ["-fecha", "-id"]
+
+    def __str__(self):
+        return "Devolucion de %s" % self.venta.numero
+
+    @property
+    def total_lineas(self):
+        return redondear(sum(l.total for l in self.lineas.all()))
+
+
+class LineaDevolucion(TenantModel):
+    devolucion = models.ForeignKey(Devolucion, on_delete=models.CASCADE, related_name="lineas")
+    articulo = models.ForeignKey(Articulo, on_delete=models.SET_NULL, null=True, blank=True)
+    variante = models.ForeignKey(Variante, on_delete=models.SET_NULL, null=True, blank=True)
+    descripcion = models.CharField(max_length=200)
+    cantidad = models.PositiveIntegerField(default=1)
+    precio_unitario = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+
+    class Meta:
+        verbose_name = "Linea de devolucion"
+        verbose_name_plural = "Lineas de devolucion"
+        ordering = ["id"]
+
+    def __str__(self):
+        return self.descripcion
+
+    @property
+    def total(self):
+        return redondear(self.cantidad * self.precio_unitario)
+
+
+class InventarioFisico(TenantModel):
+    ESTADOS = [("en_proceso", "En proceso"), ("completado", "Completado"), ("cancelado", "Cancelado")]
+    fecha = models.DateField(default=timezone.localdate)
+    tienda = models.ForeignKey(Tienda, on_delete=models.PROTECT, related_name="inventarios")
+    estado = models.CharField(max_length=12, choices=ESTADOS, default="en_proceso")
+    notas = models.TextField(blank=True)
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    completado = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Inventario fisico"
+        verbose_name_plural = "Inventarios fisicos"
+        ordering = ["-fecha", "-id"]
+
+    def __str__(self):
+        return "Inventario %s %s" % (self.tienda.nombre, self.fecha.strftime("%d/%m/%Y"))
+
+
+class LineaInventario(TenantModel):
+    inventario = models.ForeignKey(InventarioFisico, on_delete=models.CASCADE, related_name="lineas")
+    variante = models.ForeignKey(Variante, on_delete=models.PROTECT, related_name="lineas_inventario")
+    cantidad_sistema = models.IntegerField(default=0)
+    cantidad_contada = models.IntegerField(default=0)
+
+    class Meta:
+        verbose_name = "Linea de inventario"
+        verbose_name_plural = "Lineas de inventario"
+        ordering = ["id"]
+        unique_together = [("inventario", "variante")]
+
+    def __str__(self):
+        return "%s - sistema %d / contado %d" % (self.variante, self.cantidad_sistema, self.cantidad_contada)
+
+    @property
+    def diferencia(self):
+        return self.cantidad_contada - self.cantidad_sistema
+
+
+class MedidaCliente(TenantModel):
+    cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, related_name="medidas")
+    fecha = models.DateField(default=timezone.localdate)
+    pecho = models.DecimalField(max_digits=5, decimal_places=1, null=True, blank=True, help_text="cm")
+    cintura = models.DecimalField(max_digits=5, decimal_places=1, null=True, blank=True, help_text="cm")
+    cadera = models.DecimalField(max_digits=5, decimal_places=1, null=True, blank=True, help_text="cm")
+    largo_manga = models.DecimalField(max_digits=5, decimal_places=1, null=True, blank=True, help_text="cm")
+    ancho_espalda = models.DecimalField(max_digits=5, decimal_places=1, null=True, blank=True, help_text="cm")
+    largo_camisa = models.DecimalField(max_digits=5, decimal_places=1, null=True, blank=True, help_text="cm")
+    cuello = models.DecimalField(max_digits=5, decimal_places=1, null=True, blank=True, help_text="cm")
+    notas = models.TextField(blank=True)
+
+    class Meta:
+        verbose_name = "Medida de cliente"
+        verbose_name_plural = "Medidas de clientes"
+        ordering = ["-fecha"]
+
+    def __str__(self):
+        return "Medidas de %s - %s" % (self.cliente.nombre_completo, self.fecha.strftime("%d/%m/%Y"))
+
+
+class Evento(TenantModel):
+    TIPOS = [
+        ("promocion", "Promocion"),
+        ("rebajas", "Rebajas"),
+        ("feria", "Feria / evento"),
+        ("cierre", "Cierre"),
+        ("recordatorio", "Recordatorio"),
+        ("otro", "Otro"),
+    ]
+    fecha = models.DateField()
+    fecha_fin = models.DateField(null=True, blank=True)
+    titulo = models.CharField(max_length=150)
+    descripcion = models.TextField(blank=True)
+    tipo = models.CharField(max_length=15, choices=TIPOS, default="otro")
+    tienda = models.ForeignKey(Tienda, on_delete=models.SET_NULL, null=True, blank=True, related_name="eventos")
+
+    class Meta:
+        verbose_name = "Evento"
+        verbose_name_plural = "Eventos"
+        ordering = ["fecha", "titulo"]
+
+    def __str__(self):
+        return "%s - %s" % (self.titulo, self.fecha.strftime("%d/%m/%Y"))
+'''
+
+with open("negocio/models.py", "a", encoding="utf-8") as f:
+    f.write(code)
+print("appended")
+'''

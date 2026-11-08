@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% load core_extras %}
+{% block title %}Eventos · Bosselli{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1 class="page-title">Eventos y calendario</h1>
+    <p class="page-sub">Promociones, rebajas, ferias y recordatorios.</p>
+  </div>
+  <a class="btn btn-gold btn-sm" href="{% url 'evento_nuevo' %}"><i class="bi bi-plus-lg me-1"></i> Nuevo evento</a>
+</div>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Fecha</th><th>Fin</th><th>Título</th><th>Tipo</th><th>Tienda</th><th></th></tr></thead>
+      <tbody>
+        {% for e in page_obj %}
+          <tr>
+            <td class="fw-semibold">{{ e.fecha|date:"d/m/Y" }}</td>
+            <td class="small text-muted">{{ e.fecha_fin|date:"d/m/Y"|default:"—" }}</td>
+            <td>{{ e.titulo }}</td>
+            <td><span class="badge badge-soft">{{ e.get_tipo_display }}</span></td>
+            <td class="small">{{ e.tienda.nombre|default:"Todas" }}</td>
+            <td class="text-end">
+              <a class="btn btn-sm btn-icon btn-outline-secondary" href="{% url 'evento_editar' e.pk %}"><i class="bi bi-pencil"></i></a>
+              <form method="post" action="{% url 'evento_borrar' e.pk %}" data-confirm="¿Eliminar?" class="d-inline">
+                {% csrf_token %}<button class="btn btn-sm btn-icon btn-outline-danger" type="submit"><i class="bi bi-trash"></i></button>
+              </form>
+            </td>
+          </tr>
+          {% if e.descripcion %}<tr><td colspan="6" class="small text-muted ps-3">{{ e.descripcion }}</td></tr>{% endif %}
+        {% empty %}
+          <tr><td colspan="6" class="empty-state"><i class="bi bi-calendar-event"></i>No hay eventos.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% include "partials/paginacion.html" %}
+{% endblock %}

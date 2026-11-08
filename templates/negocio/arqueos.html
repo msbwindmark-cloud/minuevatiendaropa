@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% load core_extras %}
+{% block title %}Arqueo de caja · Bosselli{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1 class="page-title">Arqueo de caja</h1>
+    <p class="page-sub">Cierre diario: compara lo contado con lo esperado por ventas.</p>
+  </div>
+  <a class="btn btn-gold btn-sm" href="{% url 'arqueo_nuevo' %}"><i class="bi bi-plus-lg me-1"></i> Nuevo arqueo</a>
+</div>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Fecha</th><th>Tienda</th><th class="text-end">Contado</th><th class="text-end">Esperado</th><th class="text-end">Diferencia</th><th>Estado</th><th></th></tr></thead>
+      <tbody>
+        {% for a in page_obj %}
+          <tr>
+            <td class="fw-semibold">{{ a.fecha|date:"d/m/Y" }}</td>
+            <td>{{ a.tienda.nombre }}</td>
+            <td class="text-end num">{{ a.total_contado|euro }}</td>
+            <td class="text-end num">{{ a.total_esperado|euro }}</td>
+            <td class="text-end num {% if a.diferencia != 0 %}text-danger fw-bold{% endif %}">{{ a.diferencia|euro }}</td>
+            <td><span class="badge badge-estado-{{ a.estado }}">{{ a.get_estado_display }}</span></td>
+            <td class="text-end">
+              <a class="btn btn-sm btn-icon btn-outline-secondary" href="{% url 'arqueo_editar' a.pk %}"><i class="bi bi-pencil"></i></a>
+              <form method="post" action="{% url 'arqueo_borrar' a.pk %}" data-confirm="¿Eliminar?" class="d-inline">
+                {% csrf_token %}<button class="btn btn-sm btn-icon btn-outline-danger" type="submit"><i class="bi bi-trash"></i></button>
+              </form>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="7" class="empty-state"><i class="bi bi-calculator"></i>No hay arqueos registrados.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% include "partials/paginacion.html" %}
+{% endblock %}

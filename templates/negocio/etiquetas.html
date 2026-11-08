@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% load core_extras %}
+{% block title %}Etiquetas de precio · Bosselli{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1 class="page-title">Etiquetas de precio</h1>
+    <p class="page-sub">Genera etiquetas imprimibles con código de barras para las prendas.</p>
+  </div>
+</div>
+
+<form method="post">
+  {% csrf_token %}
+  <div class="card mb-3">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <span>Selecciona variantes</span>
+      <div class="d-flex gap-2 align-items-center">
+        <label class="small mb-0">Cantidad por etiqueta:</label>
+        <input type="number" class="form-control form-control-sm" name="cantidad" value="1" min="1" max="50" style="width:70px;">
+        <button class="btn btn-sm btn-gold" type="submit"><i class="bi bi-printer me-1"></i> Generar PDF</button>
+      </div>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-sm table-hover mb-0">
+        <thead><tr><th></th><th>Referencia</th><th>Artículo</th><th>Talla</th><th>Color</th><th class="text-end">PVP</th></tr></thead>
+        <tbody>
+          {% for v in variantes %}
+            <tr>
+              <td><input type="checkbox" name="variante" value="{{ v.pk }}" class="form-check-input"></td>
+              <td class="small text-muted">{{ v.articulo.referencia }}</td>
+              <td>{{ v.articulo.nombre }}</td>
+              <td>{{ v.talla }}</td>
+              <td>{{ v.color|default:"—" }}</td>
+              <td class="text-end num">{{ v.articulo.pvp|euro }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</form>
+{% endblock %}

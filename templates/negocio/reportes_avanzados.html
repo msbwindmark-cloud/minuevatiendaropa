@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% load core_extras %}
+{% block title %}Reportes avanzados · Bosselli{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1 class="page-title">Reportes avanzados</h1>
+    <p class="page-sub">Ventas por familia, top artículos, margen y ventas por hora.</p>
+  </div>
+  <form method="get" class="d-flex gap-2">
+    <input class="form-control form-control-sm" type="number" name="anyo" value="{{ anyo }}" style="width:90px;" placeholder="Año">
+    <select class="form-select form-select-sm" name="mes" style="width:120px;">
+      <option value="">Todo el año</option>
+      {% for m in "123456789" %}{% endfor %}
+      {% for i in "123456789012"|make_list %}{% endfor %}
+      <option value="1" {% if mes == "1" %}selected{% endif %}>Enero</option>
+      <option value="2" {% if mes == "2" %}selected{% endif %}>Febrero</option>
+      <option value="3" {% if mes == "3" %}selected{% endif %}>Marzo</option>
+      <option value="4" {% if mes == "4" %}selected{% endif %}>Abril</option>
+      <option value="5" {% if mes == "5" %}selected{% endif %}>Mayo</option>
+      <option value="6" {% if mes == "6" %}selected{% endif %}>Junio</option>
+      <option value="7" {% if mes == "7" %}selected{% endif %}>Julio</option>
+      <option value="8" {% if mes == "8" %}selected{% endif %}>Agosto</option>
+      <option value="9" {% if mes == "9" %}selected{% endif %}>Septiembre</option>
+      <option value="10" {% if mes == "10" %}selected{% endif %}>Octubre</option>
+      <option value="11" {% if mes == "11" %}selected{% endif %}>Noviembre</option>
+      <option value="12" {% if mes == "12" %}selected{% endif %}>Diciembre</option>
+    </select>
+    <button class="btn btn-sm btn-primary" type="submit">Ver</button>
+  </form>
+</div>
+
+<div class="row g-3">
+  <div class="col-12 col-lg-6">
+    <div class="card h-100">
+      <div class="card-header"><i class="bi bi-pie-chart text-gold me-1"></i> Ventas por familia</div>
+      <div class="table-responsive">
+        <table class="table table-sm mb-0">
+          <thead><tr><th>Familia</th><th class="text-end">Cantidad</th><th class="text-end">Total</th></tr></thead>
+          <tbody>
+            {% for f in por_familia %}
+              <tr>
+                <td>{{ f.articulo__familia__nombre|default:"Sin familia" }}</td>
+                <td class="text-end num">{{ f.cantidad }}</td>
+                <td class="text-end num fw-bold">{{ f.total|euro }}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="3" class="empty-state">Sin datos.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-6">
+    <div class="card h-100">
+      <div class="card-header"><i class="bi bi-trophy text-gold me-1"></i> Top 15 artículos más vendidos</div>
+      <div class="table-responsive">
+        <table class="table table-sm mb-0">
+          <thead><tr><th>Artículo</th><th class="text-end">Cantidad</th><th class="text-end">Total</th></tr></thead>
+          <tbody>
+            {% for t in top %}
+              <tr>
+                <td class="small">{{ t.descripcion }}</td>
+                <td class="text-end num">{{ t.cantidad }}</td>
+                <td class="text-end num fw-bold">{{ t.total|euro }}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="3" class="empty-state">Sin datos.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-6">
+    <div class="card h-100">
+      <div class="card-header"><i class="bi bi-graph-up text-gold me-1"></i> Margen por familia (stock actual)</div>
+      <div class="table-responsive">
+        <table class="table table-sm mb-0">
+          <thead><tr><th>Familia</th><th class="text-end">Coste</th><th class="text-end">PVP</th><th class="text-end">Margen</th></tr></thead>
+          <tbody>
+            {% for m in margen_familia %}
+              <tr>
+                <td>{{ m.familia }}</td>
+                <td class="text-end num small">{{ m.coste|euro }}</td>
+                <td class="text-end num small">{{ m.pvp|euro }}</td>
+                <td class="text-end num fw-bold">{{ m.margen|euro }}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="4" class="empty-state">Sin datos.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-6">
+    <div class="card h-100">
+      <div class="card-header"><i class="bi bi-clock text-gold me-1"></i> Ventas por hora del día</div>
+      <div class="table-responsive">
+        <table class="table table-sm mb-0">
+          <thead><tr><th>Hora</th><th class="text-end">Nº ventas</th><th class="text-end">Total</th></tr></thead>
+          <tbody>
+            {% for h in por_hora %}
+              <tr>
+                <td>{{ h.hora }}:00</td>
+                <td class="text-end num">{{ h.n }}</td>
+                <td class="text-end num fw-bold">{{ h.total|euro }}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="3" class="empty-state">Sin datos.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

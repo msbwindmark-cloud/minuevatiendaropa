@@ -1890,3 +1890,421 @@ def notificaciones(request):
         "total_alertas": total_alertas,
         "ajuste": ajuste,
     })
+
+from django.shortcuts import get_object_or_404, redirect, render
+from django.contrib import messages
+from django.utils import timezone
+from django.db.models import Sum
+
+from .forms import (
+    ArqueoCajaForm, DevolucionForm, EventoForm, InventarioFisicoForm,
+    LineaDevolucionFormSet, MedidaClienteForm,
+)
+from .models import (
+    ArqueoCaja, Devolucion, Evento, InventarioFisico, LineaDevolucion,
+    LineaInventario, MedidaCliente, Stock, Variante,
+)
+
+
+# ---------------------------------------------------------------------------
+# Arqueo de caja
+# ---------------------------------------------------------------------------
+@login_required
+@gestor_required
+def arqueos(request):
+    qs = ArqueoCaja.all_objects.filter(organizacion=_org(request)).select_related("tienda")
+    qs = qs.order_by("-fecha", "-id")
+    return render(request, "negocio/arqueos.html", _contexto_lista(request, _pagin(request, qs, 20)))
+
+
+@login_required
+@gestor_required
+def arqueo_form(request, pk=None):
+    org = _org(request)
+    obj = get_object_or_404(ArqueoCaja.all_objects, pk=pk, organizacion=org) if pk else None
+    initial = {}
+    if obj is None:
+        tienda = _qs(Tienda, request).filter(activa=True).first()
+        if tienda:
+            initial["tienda"] = tienda
+        initial["fecha"] = timezone.localdate()
+    form = ArqueoCajaForm(request.POST or None, instance=obj, initial=initial, organizacion=org)
+    if request.method == "POST" and form.is_valid():
+        arqueo = form.save(commit=False)
+        arqueo.organizacion = org
+        arqueo.usuario = request.user
+        arqueo.calcular_esperado()
+        arqueo.save()
+        messages.success(request, "Arqueo guardado.")
+        return redirect("arqueos")
+    # Calcular esperado para mostrar
+    esperado = None
+    if form.instance and form.instance.tienda_id:
+        try:
+            a = form.instance
+            a.organizacion = org
+            a.calcular_esperado()
+            esperado = a
+        except Exception:
+            pass
+    return render(request, "negocio/arqueo_form.html", {"form": form, "obj": obj, "esperado": esperado})
+
+
+@login_required
+@admin_required
+@require_POST
+def arqueo_borrar(request, pk):
+    obj = get_object_or_404(ArqueoCaja.all_objects, pk=pk, organizacion=_org(request))
+    obj.delete()
+    messages.success(request, "Arqueo eliminado.")
+    return redirect("arqueos")
+
+
+# ---------------------------------------------------------------------------
+# Devoluciones
+# ---------------------------------------------------------------------------
+@login_required
+@gestor_required
+def devoluciones(request):
+    qs = Devolucion.all_objects.filter(organizacion=_org(request)).select_related("venta", "venta__cliente")
+    qs = qs.order_by("-fecha", "-id")
+    return render(request, "negocio/devoluciones.html", _contexto_lista(request, _pagin(request, qs, 20)))
+
+
+@login_required
+@gestor_required
+def devolucion_form(request, pk=None):
+    org = _org(request)
+    obj = get_object_or_404(Devolucion.all_objects, pk=pk, organizacion=org) if pk else None
+    initial = {}
+    if obj is None and request.GET.get("venta"):
+        initial["venta"] = request.GET.get("venta")
+    form = DevolucionForm(request.POST or None, request.FILES or None, instance=obj, initial=initial, organizacion=org)
+    formset = LineaDevolucionFormSet(request.POST or None, instance=obj or Devolucion(), prefix="lineas")
+    if request.method == "POST" and form.is_valid() and formset.is_valid():
+        dev = form.save(commit=False)
+        dev.organizacion = org
+        dev.save()
+        formset.instance = dev
+        for linea in formset.save(commit=False):
+            linea.organizacion = org
+            linea.devolucion = dev
+            linea.save()
+        for borrada in formset.deleted_objects:
+            borrada.delete()
+        dev.total = dev.total_lineas
+        dev.save(update_fields=["total"])
+        # Re-entrar stock si se procesa
+        if dev.estado == "procesada":
+            for linea in dev.lineas.all():
+                if linea.variante_id:
+                    mover_stock(linea.variante, dev.venta.tienda, linea.cantidad, "devolucion",
+                                motivo=f"Devolución {dev.pk}", referencia=dev.venta.numero,
+                                usuario=request.user, organizacion=org)
+        messages.success(request, "Devolución guardada.")
+        return redirect("devoluciones")
+    return render(request, "negocio/devolucion_form.html", {"form": form, "formset": formset, "obj": obj})
+
+
+@login_required
+@admin_required
+@require_POST
+def devolucion_borrar(request, pk):
+    obj = get_object_or_404(Devolucion.all_objects, pk=pk, organizacion=_org(request))
+    obj.delete()
+    messages.success(request, "Devolución eliminada.")
+    return redirect("devoluciones")
+
+
+# ---------------------------------------------------------------------------
+# Inventario físico
+# ---------------------------------------------------------------------------
+@login_required
+@gestor_required
+def inventarios(request):
+    qs = InventarioFisico.all_objects.filter(organizacion=_org(request)).select_related("tienda")
+    qs = qs.order_by("-fecha", "-id")
+    return render(request, "negocio/inventarios.html", _contexto_lista(request, _pagin(request, qs, 20)))
+
+
+@login_required
+@gestor_required
+def inventario_form(request, pk=None):
+    org = _org(request)
+    obj = get_object_or_404(InventarioFisico.all_objects, pk=pk, organizacion=org) if pk else None
+    if obj is None and request.method == "GET":
+        # Crear nuevo inventario con líneas pre-rellenadas
+        tienda_id = request.GET.get("tienda")
+        tienda = None
+        if tienda_id:
+            tienda = _qs(Tienda, request).filter(pk=tienda_id).first()
+        if tienda is None:
+            tienda = _qs(Tienda, request).filter(activa=True).first()
+        if tienda:
+            inv = InventarioFisico.all_objects.create(organizacion=org, tienda=tienda, usuario=request.user)
+            # Pre-rellenar líneas con stock actual
+            from .models import Variante, Stock
+            variantes = Variante.all_objects.filter(organizacion=org, activa=True).select_related("articulo")
+            for v in variantes:
+                stock = Stock.all_objects.filter(organizacion=org, variante=v, tienda=tienda).first()
+                LineaInventario.all_objects.create(
+                    organizacion=org, inventario=inv, variante=v,
+                    cantidad_sistema=stock.cantidad if stock else 0,
+                    cantidad_contada=stock.cantidad if stock else 0,
+                )
+            messages.success(request, "Inventario creado. Cuenta las unidades y ajusta.")
+            return redirect("inventario_editar", pk=inv.pk)
+    form = InventarioFisicoForm(request.POST or None, instance=obj, organizacion=org)
+    if request.method == "POST" and form.is_valid():
+        inv = form.save(commit=False)
+        inv.organizacion = org
+        inv.usuario = request.user
+        inv.save()
+        messages.success(request, "Inventario guardado.")
+        return redirect("inventarios")
+    # Líneas de inventario
+    lineas = []
+    if obj:
+        lineas = LineaInventario.all_objects.filter(organizacion=org, inventario=obj).select_related("variante__articulo")
+    return render(request, "negocio/inventario_form.html", {"form": form, "obj": obj, "lineas": lineas})
+
+
+@login_required
+@gestor_required
+def inventario_contar(request, pk):
+    org = _org(request)
+    inv = get_object_or_404(InventarioFisico.all_objects, pk=pk, organizacion=org)
+    if request.method == "POST":
+        for linea in inv.lineas.all():
+            campo = f"contada_{linea.pk}"
+            if campo in request.POST:
+                try:
+                    linea.cantidad_contada = int(request.POST[campo])
+                    linea.save(update_fields=["cantidad_contada", "actualizado"])
+                except ValueError:
+                    pass
+        messages.success(request, "Conteo guardado.")
+        return redirect("inventario_editar", pk=inv.pk)
+    return redirect("inventario_editar", pk=inv.pk)
+
+
+@login_required
+@gestor_required
+@require_POST
+def inventario_completar(request, pk):
+    org = _org(request)
+    inv = get_object_or_404(InventarioFisico.all_objects, pk=pk, organizacion=org)
+    # Ajustar stock según diferencias
+    for linea in inv.lineas.all():
+        diff = linea.diferencia
+        if diff != 0:
+            mover_stock(linea.variante, inv.tienda, diff, "ajuste",
+                        motivo=f"Inventario físico {inv.pk}", referencia=f"INV-{inv.pk}",
+                        usuario=request.user, organizacion=org)
+    inv.estado = "completado"
+    inv.completado = timezone.now()
+    inv.save(update_fields=["estado", "completado", "actualizado"])
+    messages.success(request, "Inventario completado. Stock ajustado.")
+    return redirect("inventarios")
+
+
+@login_required
+@admin_required
+@require_POST
+def inventario_borrar(request, pk):
+    obj = get_object_or_404(InventarioFisico.all_objects, pk=pk, organizacion=_org(request))
+    obj.delete()
+    messages.success(request, "Inventario eliminado.")
+    return redirect("inventarios")
+
+
+# ---------------------------------------------------------------------------
+# Medidas de cliente
+# ---------------------------------------------------------------------------
+@login_required
+@gestor_required
+def medidas_cliente(request, cliente_pk):
+    org = _org(request)
+    cliente = get_object_or_404(Cliente.all_objects, pk=cliente_pk, organizacion=org)
+    medidas = MedidaCliente.all_objects.filter(organizacion=org, cliente=cliente).order_by("-fecha")
+    return render(request, "negocio/medidas_cliente.html", {"cliente": cliente, "medidas": medidas})
+
+
+@login_required
+@gestor_required
+def medida_form(request, cliente_pk, pk=None):
+    org = _org(request)
+    cliente = get_object_or_404(Cliente.all_objects, pk=cliente_pk, organizacion=org)
+    obj = get_object_or_404(MedidaCliente.all_objects, pk=pk, organizacion=org) if pk else None
+    initial = {"cliente": cliente} if not obj else {}
+    form = MedidaClienteForm(request.POST or None, instance=obj, initial=initial, organizacion=org)
+    if request.method == "POST" and form.is_valid():
+        m = form.save(commit=False)
+        m.organizacion = org
+        m.cliente = cliente
+        m.save()
+        messages.success(request, "Medidas guardadas.")
+        return redirect("medidas_cliente", cliente_pk=cliente.pk)
+    return render(request, "negocio/form.html", {"form": form, "titulo": "Nueva medida" if not obj else "Editar medida", "subtitulo": str(cliente), "volver": "medidas_cliente", "volver_pk": cliente.pk})
+
+
+# ---------------------------------------------------------------------------
+# Eventos / calendario
+# ---------------------------------------------------------------------------
+@login_required
+@gestor_required
+def eventos(request):
+    qs = Evento.all_objects.filter(organizacion=_org(request)).select_related("tienda")
+    qs = qs.order_by("fecha")
+    return render(request, "negocio/eventos.html", _contexto_lista(request, _pagin(request, qs, 30)))
+
+
+@login_required
+@gestor_required
+def evento_form(request, pk=None):
+    org = _org(request)
+    obj = get_object_or_404(Evento.all_objects, pk=pk, organizacion=org) if pk else None
+    form = EventoForm(request.POST or None, instance=obj, organizacion=org)
+    if request.method == "POST" and form.is_valid():
+        e = form.save(commit=False)
+        e.organizacion = org
+        e.save()
+        messages.success(request, "Evento guardado.")
+        return redirect("eventos")
+    return render(request, "negocio/form.html", {"form": form, "titulo": "Nuevo evento" if not obj else "Editar evento", "volver": "eventos"})
+
+
+@login_required
+@admin_required
+@require_POST
+def evento_borrar(request, pk):
+    obj = get_object_or_404(Evento.all_objects, pk=pk, organizacion=_org(request))
+    obj.delete()
+    messages.success(request, "Evento eliminado.")
+    return redirect("eventos")
+
+
+# ---------------------------------------------------------------------------
+# Etiquetas de precio con código de barras
+# ---------------------------------------------------------------------------
+@login_required
+@gestor_required
+def etiquetas(request):
+    org = _org(request)
+    variantes = Variante.all_objects.filter(organizacion=org, activa=True).select_related("articulo")
+    if request.method == "POST":
+        seleccionados = request.POST.getlist("variante")
+        cantidad = int(request.POST.get("cantidad", 1) or 1)
+        if not seleccionados:
+            messages.error(request, "Selecciona al menos una variante.")
+            return redirect("etiquetas")
+        # Generar PDF
+        from reportlab.lib.pagesizes import mm
+        from reportlab.lib.units import mm as MM
+        from reportlab.pdfgen import canvas
+        from reportlab.graphics.barcode import code128
+        import io
+        buffer = io.BytesIO()
+        c = canvas.Canvas(buffer, pagesize=(50 * MM, 30 * MM))
+        for vid in seleccionados:
+            v = Variante.all_objects.get(pk=vid, organizacion=org)
+            for _ in range(cantidad):
+                # Etiqueta 50x30mm
+                c.setFont("Helvetica-Bold", 8)
+                c.drawString(2 * MM, 26 * MM, v.articulo.nombre[:28])
+                c.setFont("Helvetica", 7)
+                c.drawString(2 * MM, 22 * MM, f"Talla: {v.talla}  Color: {v.color}"[:28])
+                c.drawString(2 * MM, 18 * MM, f"Ref: {v.articulo.referencia}")
+                c.setFont("Helvetica-Bold", 10)
+                c.drawString(2 * MM, 13 * MM, f"{v.articulo.pvp:.2f} EUR")
+                # Código de barras
+                barcode = code128.Code128(v.codigo_barras or v.articulo.referencia, barHeight=8 * MM, barWidth=0.3 * MM)
+                barcode.drawOn(c, 2 * MM, 3 * MM)
+                c.showPage()
+        c.save()
+        resp = HttpResponse(buffer.getvalue(), content_type="application/pdf")
+        resp["Content-Disposition"] = 'attachment; filename="etiquetas.pdf"'
+        registrar(request, "exportar", objeto_repr="Etiquetas de precio")
+        return resp
+    return render(request, "negocio/etiquetas.html", {"variantes": variantes})
+
+
+# ---------------------------------------------------------------------------
+# Comparativa entre tiendas
+# ---------------------------------------------------------------------------
+@login_required
+@gestor_required
+def comparativa(request):
+    org = _org(request)
+    tiendas = _qs(Tienda, request).filter(activa=True)
+    anyo = int(request.GET.get("anyo", timezone.localdate().year))
+    datos = []
+    for t in tiendas:
+        ventas = Venta.all_objects.filter(organizacion=org, tienda=t, fecha__year=anyo).exclude(estado="anulada")
+        gastos = Gasto.all_objects.filter(organizacion=org, tienda=t, fecha__year=anyo)
+        compras = Compra.all_objects.filter(organizacion=org, fecha__year=anyo).exclude(estado="anulada")
+        stock = Stock.all_objects.filter(organizacion=org, tienda=t)
+        datos.append({
+            "tienda": t,
+            "n_ventas": ventas.count(),
+            "total_ventas": ventas.aggregate(s=Sum("total"))["s"] or 0,
+            "total_gastos": gastos.aggregate(s=Sum("total"))["s"] or 0,
+            "n_gastos": gastos.count(),
+            "unidades_stock": stock.aggregate(s=Sum("cantidad"))["s"] or 0,
+            "valor_stock": sum(s.cantidad * s.variante.articulo.coste for s in stock),
+        })
+    return render(request, "negocio/comparativa.html", {"datos": datos, "anyo": anyo, "tiendas": tiendas})
+
+
+# ---------------------------------------------------------------------------
+# Reportes avanzados
+# ---------------------------------------------------------------------------
+@login_required
+@gestor_required
+def reportes_avanzados(request):
+    org = _org(request)
+    anyo = int(request.GET.get("anyo", timezone.localdate().year))
+    mes = request.GET.get("mes", "")
+    # Ventas por familia
+    from django.db.models import Count
+    ventas_lineas = LineaVenta.all_objects.filter(organizacion=org)
+    if anyo:
+        ventas_lineas = ventas_lineas.filter(venta__fecha__year=anyo)
+    if mes:
+        ventas_lineas = ventas_lineas.filter(venta__fecha__month=int(mes))
+    por_familia = list(
+        ventas_lineas.values("articulo__familia__nombre")
+        .annotate(cantidad=Sum("cantidad"), total=Sum("precio_unitario"), n=Count("id"))
+        .order_by("-total")
+    )
+    # Top artículos
+    top = list(
+        ventas_lineas.values("descripcion")
+        .annotate(cantidad=Sum("cantidad"), total=Sum("precio_unitario"))
+        .order_by("-cantidad")[:15]
+    )
+    # Margen por familia
+    margen_familia = []
+    for f in por_familia:
+        fam = f["articulo__familia__nombre"]
+        arts = Articulo.all_objects.filter(organizacion=org, familia__nombre=fam)
+        coste = sum(a.coste * a.stock_total for a in arts)
+        pvp = sum(a.pvp * a.stock_total for a in arts)
+        margen_familia.append({"familia": fam, "coste": coste, "pvp": pvp, "margen": (pvp - coste)})
+    # Ventas por hora
+    from django.db.models.functions import ExtractHour
+    por_hora = list(
+        Venta.all_objects.filter(organizacion=org, fecha__year=anyo)
+        .exclude(estado="anulada")
+        .annotate(hora=ExtractHour("creado"))
+        .values("hora")
+        .annotate(n=Count("id"), total=Sum("total"))
+        .order_by("hora")
+    )
+    return render(request, "negocio/reportes_avanzados.html", {
+        "anyo": anyo, "mes": mes,
+        "por_familia": por_familia,
+        "top": top,
+        "margen_familia": margen_familia,
+        "por_hora": por_hora,
+    })

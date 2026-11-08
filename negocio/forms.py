@@ -15,6 +15,13 @@ from .models import (
     Nomina,
     Proveedor,
     Tienda,
+    ArqueoCaja,
+    Devolucion,
+    Evento,
+    InventarioFisico,
+    LineaDevolucion,
+    LineaInventario,
+    MedidaCliente,
     Variante,
     Venta,
 )
@@ -239,4 +246,46 @@ LineaVentaFormSet = inlineformset_factory(
 )
 LineaCompraFormSet = inlineformset_factory(
     Compra, LineaCompra, form=LineaCompraForm, extra=3, can_delete=True
+)
+
+
+class ArqueoCajaForm(TenantForm):
+    class Meta:
+        model = ArqueoCaja
+        fields = ["fecha", "tienda", "efectivo_contado", "tarjeta_contado", "bizum_contado",
+                  "transferencia_contado", "notas", "estado"]
+        widgets = {"notas": forms.Textarea(attrs={"rows": 2})}
+
+class DevolucionForm(TenantForm):
+    class Meta:
+        model = Devolucion
+        fields = ["venta", "fecha", "motivo", "estado", "notas", "archivo"]
+        widgets = {"notas": forms.Textarea(attrs={"rows": 2})}
+
+class LineaDevolucionForm(TenantForm):
+    class Meta:
+        model = LineaDevolucion
+        fields = ["articulo", "variante", "descripcion", "cantidad", "precio_unitario"]
+
+class InventarioFisicoForm(TenantForm):
+    class Meta:
+        model = InventarioFisico
+        fields = ["fecha", "tienda", "notas"]
+        widgets = {"notas": forms.Textarea(attrs={"rows": 2})}
+
+class MedidaClienteForm(TenantForm):
+    class Meta:
+        model = MedidaCliente
+        fields = ["cliente", "fecha", "pecho", "cintura", "cadera", "largo_manga",
+                  "ancho_espalda", "largo_camisa", "cuello", "notas"]
+        widgets = {"notas": forms.Textarea(attrs={"rows": 2})}
+
+class EventoForm(TenantForm):
+    class Meta:
+        model = Evento
+        fields = ["fecha", "fecha_fin", "titulo", "descripcion", "tipo", "tienda"]
+        widgets = {"descripcion": forms.Textarea(attrs={"rows": 2})}
+
+LineaDevolucionFormSet = inlineformset_factory(
+    Devolucion, LineaDevolucion, form=LineaDevolucionForm, extra=3, can_delete=True
 )

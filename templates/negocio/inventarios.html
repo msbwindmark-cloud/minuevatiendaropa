@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% load core_extras %}
+{% block title %}Inventarios físicos · Bosselli{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1 class="page-title">Inventarios físicos</h1>
+    <p class="page-sub">Recuento de prendas por tienda. Compara con el stock del sistema.</p>
+  </div>
+  <form method="get" class="d-flex gap-2">
+    <select class="form-select form-select-sm" name="tienda" onchange="this.form.submit()" style="width:200px;">
+      <option value="">Selecciona tienda</option>
+      {% for t in tiendas %}<option value="{{ t.pk }}">{{ t.nombre }}</option>{% endfor %}
+    </select>
+    <a class="btn btn-gold btn-sm" href="{% url 'inventario_nuevo' %}?tienda={{ request.GET.tienda }}">
+      <i class="bi bi-plus-lg me-1"></i> Nuevo inventario
+    </a>
+  </form>
+</div>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Fecha</th><th>Tienda</th><th>Estado</th><th>Completado</th><th></th></tr></thead>
+      <tbody>
+        {% for i in page_obj %}
+          <tr>
+            <td class="fw-semibold">{{ i.fecha|date:"d/m/Y" }}</td>
+            <td>{{ i.tienda.nombre }}</td>
+            <td><span class="badge badge-estado-{{ i.estado }}">{{ i.get_estado_display }}</span></td>
+            <td class="small text-muted">{{ i.completado|date:"d/m/Y H:i"|default:"—" }}</td>
+            <td class="text-end">
+              {% if i.estado == "en_proceso" %}
+                <a class="btn btn-sm btn-primary" href="{% url 'inventario_editar' i.pk %}">Contar</a>
+                <form method="post" action="{% url 'inventario_completar' i.pk %}" data-confirm="¿Completar y ajustar stock?" class="d-inline">
+                  {% csrf_token %}<button class="btn btn-sm btn-success" type="submit"><i class="bi bi-check2"></i> Completar</button>
+                </form>
+              {% endif %}
+              <form method="post" action="{% url 'inventario_borrar' i.pk %}" data-confirm="¿Eliminar?" class="d-inline">
+                {% csrf_token %}<button class="btn btn-sm btn-icon btn-outline-danger" type="submit"><i class="bi bi-trash"></i></button>
+              </form>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="5" class="empty-state"><i class="bi bi-clipboard-check"></i>No hay inventarios.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% include "partials/paginacion.html" %}
+{% endblock %}

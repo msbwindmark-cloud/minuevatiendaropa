@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% load core_extras %}
+{% block title %}Comparativa de tiendas · Bosselli{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1 class="page-title">Comparativa entre tiendas</h1>
+    <p class="page-sub">Nervión vs Porvenir · Año {{ anyo }}</p>
+  </div>
+  <form method="get" class="d-flex gap-2">
+    <input class="form-control form-control-sm" type="number" name="anyo" value="{{ anyo }}" style="width:90px;">
+    <button class="btn btn-sm btn-primary" type="submit">Ver</button>
+  </form>
+</div>
+
+<div class="row g-3">
+  {% for d in datos %}
+  <div class="col-12 col-md-6">
+    <div class="card h-100">
+      <div class="card-header"><i class="bi bi-shop text-gold me-1"></i> {{ d.tienda.nombre }}</div>
+      <div class="card-body">
+        <dl class="mb-0">
+          <div class="kv"><dt>Ventas</dt><dd>{{ d.n_ventas }}</dd></div>
+          <div class="kv"><dt>Total ventas</dt><dd class="text-gold">{{ d.total_ventas|euro }}</dd></div>
+          <div class="kv"><dt>Gastos</dt><dd>{{ d.n_gastos }} · {{ d.total_gastos|euro }}</dd></div>
+          <div class="kv"><dt>Unidades en stock</dt><dd>{{ d.unidades_stock }}</dd></div>
+          <div class="kv"><dt>Valor stock (coste)</dt><dd>{{ d.valor_stock|euro }}</dd></div>
+          <div class="kv"><dt>Beneficio estimado</dt><dd class="{% if d.total_ventas|add:'-'|add:d.total_gastos < 0 %}text-danger{% else %}text-success{% endif %}">{{ d.total_ventas|add:'-'|add:d.total_gastos|euro }}</dd></div>
+        </dl>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -77,6 +77,38 @@ urlpatterns = [
     path("backup/", views.backup, name="backup"),
     # Notificaciones
     path("notificaciones/", views.notificaciones, name="notificaciones"),
+    # Arqueo de caja
+    path("arqueos/", views.arqueos, name="arqueos"),
+    path("arqueos/nuevo/", views.arqueo_form, name="arqueo_nuevo"),
+    path("arqueos/<int:pk>/editar/", views.arqueo_form, name="arqueo_editar"),
+    path("arqueos/<int:pk>/borrar/", views.arqueo_borrar, name="arqueo_borrar"),
+    # Devoluciones
+    path("devoluciones/", views.devoluciones, name="devoluciones"),
+    path("devoluciones/nueva/", views.devolucion_form, name="devolucion_nueva"),
+    path("devoluciones/<int:pk>/editar/", views.devolucion_form, name="devolucion_editar"),
+    path("devoluciones/<int:pk>/borrar/", views.devolucion_borrar, name="devolucion_borrar"),
+    # Inventario físico
+    path("inventarios/", views.inventarios, name="inventarios"),
+    path("inventarios/nuevo/", views.inventario_form, name="inventario_nuevo"),
+    path("inventarios/<int:pk>/", views.inventario_form, name="inventario_editar"),
+    path("inventarios/<int:pk>/contar/", views.inventario_contar, name="inventario_contar"),
+    path("inventarios/<int:pk>/completar/", views.inventario_completar, name="inventario_completar"),
+    path("inventarios/<int:pk>/borrar/", views.inventario_borrar, name="inventario_borrar"),
+    # Medidas de cliente
+    path("clientes/<int:cliente_pk>/medidas/", views.medidas_cliente, name="medidas_cliente"),
+    path("clientes/<int:cliente_pk>/medidas/nueva/", views.medida_form, name="medida_nueva"),
+    path("clientes/<int:cliente_pk>/medidas/<int:pk>/editar/", views.medida_form, name="medida_editar"),
+    # Eventos
+    path("eventos/", views.eventos, name="eventos"),
+    path("eventos/nuevo/", views.evento_form, name="evento_nuevo"),
+    path("eventos/<int:pk>/editar/", views.evento_form, name="evento_editar"),
+    path("eventos/<int:pk>/borrar/", views.evento_borrar, name="evento_borrar"),
+    # Etiquetas
+    path("etiquetas/", views.etiquetas, name="etiquetas"),
+    # Comparativa
+    path("comparativa/", views.comparativa, name="comparativa"),
+    # Reportes avanzados
+    path("reportes/", views.reportes_avanzados, name="reportes_avanzados"),
     path("backup/descargar/", views.backup_descargar, name="backup_descargar"),
     path("backup/enviar/", views.backup_email, name="backup_email"),
 ]
