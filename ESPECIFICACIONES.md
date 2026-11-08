@@ -258,3 +258,31 @@ python manage.py runserver 0.0.0.0:8000
 - [ ] `.env` con todas las variables (incluida `DJANGO_DEBUG`)
 - [ ] PWA (manifest, `/sw.js`, iconos) y diseño mobile-first
 - [ ] `seed.py` y manual de usuario
+
+
+---
+
+## 14. Estandares de UI para listados (obligatorio)
+
+Todos los listados de la aplicacion deben cumplir:
+
+1. **Busqueda automatica**: los campos de texto de busqueda deben tener el
+   atributo `data-auto-search` para que se envie el formulario automaticamente
+   tras 450 ms sin necesidad de pulsar "Buscar". Los desplegables deben tener
+   onchange="this.form.submit()".
+
+2. **Ordenacion**: los listados deben mostrar los registros mas recientes
+   primero (-fecha, -id o -creado).
+
+3. **Paginacion**: minimo 5 registros por pagina. Se incluye
+   partials/paginacion.html en todos los listados. La paginacion muestra
+   navegacion anterior/siguiente y numero de pagina.
+
+4. **Opcion mostrar mas**: la paginacion incluye enlace a la siguiente
+   pagina y muestra el total de registros.
+
+5. **Filtros**: cada listado debe tener filtros relevantes (fecha, tienda,
+   estado, categoria, etc.) con boton "Limpiar".
+
+6. **Acciones rapidas**: cada fila debe tener botones de ver/editar/borrar
+   con iconos (Bootstrap Icons) y confirmacion SweetAlert2 para borrados.
