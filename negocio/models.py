@@ -155,7 +155,7 @@ class Articulo(TenantModel):
 
     @property
     def stock_total(self):
-        return sum(s.cantidad for s in self.stocks.all())
+        return sum(v.stock_total for v in self.variantes.all())
 
     @property
     def bajo_minimo(self):

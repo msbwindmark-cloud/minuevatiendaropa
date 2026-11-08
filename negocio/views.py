@@ -192,7 +192,7 @@ def dashboard(request):
     )
 
     articulos = list(
-        Articulo.all_objects.filter(organizacion=org, activo=True).prefetch_related("stocks", "variantes")
+        Articulo.all_objects.filter(organizacion=org, activo=True).prefetch_related("variantes__stocks")
     )
     stock_bajo = [a for a in articulos if a.bajo_minimo]
     valor_stock = sum((a.stock_total * a.coste for a in articulos), D("0"))
@@ -266,7 +266,7 @@ def dashboard(request):
 @login_required
 @gestor_required
 def articulos(request):
-    qs = _qs(Articulo, request).select_related("familia", "proveedor").prefetch_related("stocks")
+    qs = _qs(Articulo, request).select_related("familia", "proveedor").prefetch_related("variantes__stocks")
     q = request.GET.get("q", "").strip()
     familia = request.GET.get("familia", "")
     tienda = request.GET.get("tienda", "")
@@ -276,8 +276,8 @@ def articulos(request):
     if familia:
         qs = qs.filter(familia_id=familia)
     if tienda:
-        qs = qs.filter(stocks__tienda_id=tienda, stocks__cantidad__gt=0).distinct()
-    qs = qs.annotate(stock_total_db=Sum("stocks__cantidad"))
+        qs = qs.filter(variantes__stocks__tienda_id=tienda, variantes__stocks__cantidad__gt=0).distinct()
+    qs = qs.annotate(stock_total_db=Sum("variantes__stocks__cantidad"))
     if bajo == "1":
         qs = qs.filter(stock_total_db__lte=F("stock_minimo"))
     qs = qs.order_by("nombre")
@@ -1307,7 +1307,7 @@ def _datos_export(request, tipo):
             for g in qs
         ]
     elif tipo == "articulos":
-        qs = Articulo.all_objects.filter(organizacion=org).select_related("familia", "proveedor").prefetch_related("stocks")
+        qs = Articulo.all_objects.filter(organizacion=org).select_related("familia", "proveedor").prefetch_related("variantes__stocks")
         titulo = "Artículos"
         headers = ["Referencia", "Artículo", "Familia", "Marca", "Coste", "PVP", "Margen %", "Stock", "Mínimo"]
         rows = [
@@ -1643,3 +1643,188 @@ def gestoria_zip(request):
     resp["Content-Disposition"] = f'attachment; filename="Gestoria_{anyo}_T{trimestre}.zip"'
     registrar(request, "exportar", objeto_repr=f"Paquete gestoría {trimestre}T {anyo}")
     return resp
+'''
+
+# ---------------------------------------------------------------------------
+# Backup diario (datos completos)
+# ---------------------------------------------------------------------------
+@login_required
+@admin_required
+def backup(request):
+    """Pantalla de backup: descargar o enviar toda la base de datos."""
+    from core.models import Ajuste
+
+    ajuste = Ajuste.obtener()
+    emails = [e.strip() for e in (ajuste.emails_backup or "").split(",") if e.strip()]
+    return render(request, "negocio/backup.html", {"emails": emails, "ajuste": ajuste})
+
+
+def _generar_backup_zip(org):
+    """Genera un ZIP con dump JSON + Excel de todos los datos de la organizaci�n."""
+    import io
+    import json
+    import zipfile
+    from datetime import datetime
+    from django.core import serializers
+
+    from .models import (
+        Articulo, Cliente, Compra, Empleado, FacturaImportada, Familia,
+        Gasto, LineaCompra, LineaVenta, Nomina, Proveedor, Stock,
+        Tienda, Variante, Venta,
+    )
+    from core.models import Organizacion
+
+    buffer = io.BytesIO()
+    fecha = datetime.now().strftime("%Y%m%d_%H%M")
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+        modelos = [
+            Organizacion, Tienda, Familia, Proveedor, Cliente, Articulo,
+            Variante, Stock, Venta, LineaVenta, Compra, LineaCompra,
+            Gasto, Empleado, Nomina, FacturaImportada,
+        ]
+        for modelo in modelos:
+            try:
+                if hasattr(modelo, "all_objects"):
+                    qs = modelo.all_objects.filter(organizacion=org)
+                else:
+                    qs = modelo.objects.all()
+                    if hasattr(modelo, "organizacion"):
+                        qs = qs.filter(organizacion=org)
+            except Exception:
+                continue
+            try:
+                data = serializers.serialize("json", qs, indent=2, use_natural_foreign_keys=True)
+                nombre = modelo.__name__.lower()
+                zf.writestr(f"json/{nombre}.json", data)
+            except Exception:
+                continue
+
+        try:
+            todo = []
+            for modelo in modelos:
+                try:
+                    if hasattr(modelo, "all_objects"):
+                        qs = modelo.all_objects.filter(organizacion=org)
+                    else:
+                        qs = modelo.objects.all()
+                        if hasattr(modelo, "organizacion"):
+                            qs = qs.filter(organizacion=org)
+                    todo.extend(json.loads(serializers.serialize("json", qs, use_natural_foreign_keys=True)))
+                except Exception:
+                    continue
+            zf.writestr("json/backup_completo.json", json.dumps(todo, indent=2, ensure_ascii=False))
+        except Exception:
+            pass
+
+        from openpyxl import Workbook
+        from openpyxl.styles import Font, PatternFill
+
+        def hoja_excel(wb, nombre, headers, rows):
+            ws = wb.create_sheet(title=nombre[:31])
+            ws.append(headers)
+            for cell in ws[1]:
+                cell.font = Font(bold=True, color="FFFFFF")
+                cell.fill = PatternFill("solid", fgColor="0F172A")
+            for row in rows:
+                ws.append(row)
+            for i in range(1, len(headers) + 1):
+                ws.column_dimensions[chr(64 + i) if i < 27 else "A"].width = 16
+            ws.freeze_panes = "A2"
+            return ws
+
+        wb = Workbook()
+        wb.remove(wb.active)
+
+        ventas = Venta.all_objects.filter(organizacion=org).select_related("tienda", "cliente")
+        hoja_excel(wb, "Ventas", ["Numero", "Fecha", "Tienda", "Cliente", "Tipo", "Base", "IVA", "Total", "Estado"],
+                   [[v.numero, v.fecha.isoformat(), v.tienda.nombre, str(v.cliente or ""), v.get_tipo_display(),
+                     float(v.base), float(v.iva_cuota), float(v.total), v.get_estado_display()] for v in ventas])
+
+        compras = Compra.all_objects.filter(organizacion=org).select_related("proveedor")
+        hoja_excel(wb, "Compras", ["Numero", "Fecha", "Proveedor", "Base", "IVA", "Total", "Estado"],
+                   [[c.numero, c.fecha.isoformat(), c.proveedor.nombre, float(c.base), float(c.iva_cuota),
+                     float(c.total), c.get_estado_display()] for c in compras])
+
+        gastos = Gasto.all_objects.filter(organizacion=org)
+        hoja_excel(wb, "Gastos", ["Fecha", "Categoria", "Descripcion", "Base", "IVA", "Total"],
+                   [[g.fecha.isoformat(), g.get_categoria_display(), g.descripcion, float(g.base),
+                     float(g.iva_cuota), float(g.total)] for g in gastos])
+
+        arts = Articulo.all_objects.filter(organizacion=org)
+        hoja_excel(wb, "Articulos", ["Referencia", "Nombre", "Familia", "Coste", "PVP", "Stock", "Minimo"],
+                   [[a.referencia, a.nombre, a.familia.nombre, float(a.coste), float(a.pvp),
+                     a.stock_total, a.stock_minimo] for a in arts])
+
+        cls = Cliente.all_objects.filter(organizacion=org)
+        hoja_excel(wb, "Clientes", ["Nombre", "Apellidos", "NIF", "Email", "Telefono", "Ciudad"],
+                   [[c.nombre, c.apellidos, c.nif, c.email, c.telefono, c.ciudad] for c in cls])
+
+        emps = Empleado.all_objects.filter(organizacion=org)
+        hoja_excel(wb, "Empleados", ["Nombre", "Apellidos", "NIF", "Puesto", "Salario anual", "Activo"],
+                   [[e.nombre, e.apellidos, e.nif, e.puesto, float(e.salario_bruto_anual), e.activo] for e in emps])
+
+        noms = Nomina.all_objects.filter(organizacion=org)
+        hoja_excel(wb, "Nominas", ["Periodo", "Empleado", "Bruto", "IRPF", "SS emp", "Neto", "Estado"],
+                   [[n.periodo.isoformat(), n.empleado.nombre_completo, float(n.bruto), float(n.irpf),
+                     float(n.ss_empleado), float(n.neto), n.get_estado_display()] for n in noms])
+
+        excel_buf = io.BytesIO()
+        wb.save(excel_buf)
+        zf.writestr(f"excel/backup_{fecha}.xlsx", excel_buf.getvalue())
+
+        zf.writestr("LEEME.txt", (
+            f"Backup de Bosselli Gestion\n"
+            f"Fecha: {datetime.now().strftime('%d/%m/%Y %H:%M')}\n"
+            f"Organizacion: {org.nombre}\n\n"
+            f"Contenido:\n"
+            f"- json/: dump de cada modelo en formato JSON (re-importable con loaddata).\n"
+            f"- json/backup_completo.json: todos los datos en un solo archivo.\n"
+            f"- excel/: resumen en Excel para consulta humana.\n\n"
+            f"Para restaurar: python manage.py loaddata json/backup_completo.json\n"
+        ))
+    return buffer.getvalue(), fecha
+
+
+@login_required
+@admin_required
+def backup_descargar(request):
+    org = request.organizacion
+    contenido, fecha = _generar_backup_zip(org)
+    resp = HttpResponse(contenido, content_type="application/zip")
+    resp["Content-Disposition"] = f'attachment; filename="backup_bosselli_{fecha}.zip"'
+    registrar(request, "exportar", objeto_repr=f"Backup descargado {fecha}")
+    return resp
+
+
+@login_required
+@admin_required
+def backup_email(request):
+    from core.models import Ajuste
+    from django.core.mail import EmailMessage
+
+    org = request.organizacion
+    ajuste = Ajuste.obtener()
+    emails = [e.strip() for e in (ajuste.emails_backup or "").split(",") if e.strip()]
+    extra = request.POST.get("emails", "").strip()
+    if extra:
+        emails = [e.strip() for e in extra.split(",") if e.strip()]
+    if not emails:
+        messages.error(request, "No hay emails configurados para el backup. A�adelos en Ajustes (admin).")
+        return redirect("backup")
+    contenido, fecha = _generar_backup_zip(org)
+    email = EmailMessage(
+        f"Backup Bosselli Gestion - {fecha}",
+        f"Adjuntamos el backup completo de los datos de Bosselli.\n\n"
+        f"Fecha: {fecha}\nOrganizacion: {org.nombre}\n\n"
+        f"Para restaurar: python manage.py loaddata json/backup_completo.json\n",
+        settings.DEFAULT_FROM_EMAIL,
+        emails,
+    )
+    email.attach(f"backup_bosselli_{fecha}.zip", contenido, "application/zip")
+    try:
+        email.send()
+        registrar(request, "envio_email", objeto_repr=f"Backup enviado a {', '.join(emails)}")
+        messages.success(request, f"Backup enviado a {', '.join(emails)}.")
+    except Exception as exc:
+        messages.error(request, f"No se pudo enviar: {exc}")
+    return redirect("backup")

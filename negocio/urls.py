@@ -73,4 +73,8 @@ urlpatterns = [
     path("informes/exportar/<str:tipo>/<str:fmt>/", views.exportar, name="exportar"),
     path("gestoria/", views.gestoria, name="gestoria"),
     path("gestoria/descargar/", views.gestoria_zip, name="gestoria_zip"),
+    # Backup
+    path("backup/", views.backup, name="backup"),
+    path("backup/descargar/", views.backup_descargar, name="backup_descargar"),
+    path("backup/enviar/", views.backup_email, name="backup_email"),
 ]

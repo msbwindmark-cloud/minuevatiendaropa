@@ -79,6 +79,11 @@
       <i class="bi bi-folder2-open"></i> Gestoría
     </a>
   </li>
+  <li class="nav-item">
+    <a class="nav-link {% if '/backup/' in request.path %}active{% endif %}" href="{% url 'backup' %}">
+      <i class="bi bi-cloud-arrow-down"></i> Backup
+    </a>
+  </li>
 </ul>
 
 {% if es_superuser or perfil.es_admin or perfil.es_gestor %}

@@ -171,6 +171,8 @@ class Ajuste(models.Model):
     lema = models.CharField(max_length=200, default="Sastrer√≠a y moda cl√°sica desde 1973")
     email_gestoria = models.EmailField(blank=True)
     email_avisos = models.EmailField(blank=True)
+    emails_backup = models.TextField(blank=True, help_text='Lista de emails separados por coma para el backup diario')
+    backup_automatico = models.BooleanField(default=False, help_text='Enviar backup autom·ticamente al cerrar el dÌa')
     pie_ticket = models.CharField(
         max_length=255,
         blank=True,
