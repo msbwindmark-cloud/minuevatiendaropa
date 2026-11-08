@@ -1,4 +1,4 @@
-const CACHE = "bosselli-v1";
+const CACHE = "bosselli-v2";
 const ASSETS = [
   "/static/css/app.css",
   "/static/js/app.js",
@@ -9,7 +9,9 @@ const ASSETS = [
 ];
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(ASSETS)).catch(() => {}));
+  event.waitUntil(
+    caches.open(CACHE).then((cache) => cache.addAll(ASSETS)).catch(() => {})
+  );
   self.skipWaiting();
 });
 
@@ -25,35 +27,28 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   const req = event.request;
   if (req.method !== "GET") return;
+
   const url = new URL(req.url);
   if (url.origin !== location.origin) return;
 
-  // Red primero para páginas; caché para estáticos
-  if (req.destination === "document") {
-    event.respondWith(
-      fetch(req)
-        .then((res) => {
-          const copia = res.clone();
-          caches.open(CACHE).then((cache) => cache.put(req, copia)).catch(() => {});
-          return res;
-        })
-        .catch(() => caches.match(req).then((r) => r || caches.match("/")))
-    );
-    return;
-  }
+  // Solo cachear estáticos; las páginas siempre van a red
+  if (!url.pathname.startsWith("/static/")) return;
 
   event.respondWith(
     caches.match(req).then((cached) => {
       if (cached) return cached;
-      return fetch(req)
-        .then((res) => {
-          if (res.ok) {
-            const copia = res.clone();
-            caches.open(CACHE).then((cache) => cache.put(req, copia)).catch(() => {});
-          }
-          return res;
-        })
-        .catch(() => cached);
+      return fetch(req).then((res) => {
+        if (res && res.ok) {
+          const copia = res.clone();
+          caches.open(CACHE).then((cache) => cache.put(req, copia)).catch(() => {});
+        }
+        return res;
+      }).catch(() => {
+        // Devolver una respuesta vacía válida en lugar de undefined
+        return new Response("", { status: 503, statusText: "Service Unavailable" });
+      });
+    }).catch(() => {
+      return new Response("", { status: 503, statusText: "Service Unavailable" });
     })
   );
 });

@@ -173,6 +173,8 @@ class Ajuste(models.Model):
     email_avisos = models.EmailField(blank=True)
     emails_backup = models.TextField(blank=True, help_text='Lista de emails separados por coma para el backup diario')
     backup_automatico = models.BooleanField(default=False, help_text='Enviar backup automaticamente al cerrar el dia')
+    notificar_stock_bajo = models.BooleanField(default=True, help_text='Enviar email cuando el stock este por debajo del minimo')
+    email_notificaciones = models.EmailField(blank=True, help_text='Email para recibir alertas de stock bajo')
     pie_ticket = models.CharField(
         max_length=255,
         blank=True,

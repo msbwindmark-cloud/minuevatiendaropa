@@ -93,6 +93,18 @@ Se puede descargar o enviar por email a la gestoría con un clic.
 Todo lo que se hace queda registrado: quién, cuándo, qué cambió. Visible en
 "Historial" (solo para gestores y administradores).
 
+## 12b. Backup (copia de seguridad)
+
+- Menú lateral → **Backup**. Descarga un ZIP con toda la base de datos
+  (JSON re-importable + Excel) y un LEEME con instrucciones.
+- También se puede enviar por email a la lista configurada (en Ajustes
+  del admin: `emails_backup`, separados por coma).
+- Útil para el cierre del día: guarda el ZIP en un sitio seguro.
+- Si algún día se estropea la página, se restaura con
+  `python manage.py loaddata json/backup_completo.json` sobre una
+  instalación limpia. Los archivos subidos (facturas, imágenes) están
+  en la carpeta `media/` y deben copiarse aparte.
+
 ## 13. PWA (instalar en el móvil)
 
 La aplicación se puede instalar en el móvil como una app (icono en la pantalla
