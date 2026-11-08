@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% load core_extras %}
+{% block title %}Configuración · Bosselli{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1 class="page-title">Configuración</h1>
+    <p class="page-sub">Tiendas y familias de artículos.</p>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-12 col-lg-6">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-shop text-gold me-1"></i> Tiendas</span>
+        <a class="btn btn-sm btn-outline-primary" href="{% url 'tienda_nueva' %}"><i class="bi bi-plus-lg"></i></a>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm mb-0">
+          <thead><tr><th>Nombre</th><th>Código</th><th>Dirección</th><th>Activa</th><th></th></tr></thead>
+          <tbody>
+            {% for t in tiendas_lista %}
+              <tr>
+                <td class="fw-semibold">{{ t.nombre }}</td>
+                <td><span class="badge badge-soft">{{ t.codigo }}</span></td>
+                <td class="small">{{ t.direccion|default:"—" }}</td>
+                <td>{% if t.activa %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-x-circle text-muted"></i>{% endif %}</td>
+                <td class="text-end"><a class="btn btn-sm btn-icon btn-outline-secondary" href="{% url 'tienda_editar' t.pk %}"><i class="bi bi-pencil"></i></a></td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="5" class="empty-state">No hay tiendas.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-6">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-tags text-gold me-1"></i> Familias de artículos</span>
+        <a class="btn btn-sm btn-outline-primary" href="{% url 'familia_nueva' %}"><i class="bi bi-plus-lg"></i></a>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm mb-0">
+          <thead><tr><th>Nombre</th><th>Orden</th><th>Activa</th><th></th></tr></thead>
+          <tbody>
+            {% for f in familias_lista %}
+              <tr>
+                <td class="fw-semibold">{{ f.nombre }}</td>
+                <td>{{ f.orden }}</td>
+                <td>{% if f.activa %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-x-circle text-muted"></i>{% endif %}</td>
+                <td class="text-end"><a class="btn btn-sm btn-icon btn-outline-secondary" href="{% url 'familia_editar' f.pk %}"><i class="bi bi-pencil"></i></a></td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="4" class="empty-state">No hay familias.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

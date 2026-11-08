@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% load core_extras %}
+{% block title %}Facturas · Bosselli{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1 class="page-title">Facturas importadas</h1>
+    <p class="page-sub">Sube facturas de proveedores (PDF o foto) y revísalas antes de crear el gasto/compra/venta.</p>
+  </div>
+  <a class="btn btn-gold btn-sm" href="{% url 'factura_subir' %}"><i class="bi bi-cloud-arrow-up me-1"></i> Subir factura</a>
+</div>
+
+<form class="filtros mb-3" method="get">
+  <div class="row g-2 align-items-end">
+    <div class="col-6 col-md-3">
+      <label class="form-label">Estado</label>
+      <select class="form-select" name="estado">
+        <option value="">Todos</option>
+        <option value="pendiente" {% if filtros.estado == "pendiente" %}selected{% endif %}>Pendiente</option>
+        <option value="revisada" {% if filtros.estado == "revisada" %}selected{% endif %}>Revisada</option>
+        <option value="descartada" {% if filtros.estado == "descartada" %}selected{% endif %}>Descartada</option>
+      </select>
+    </div>
+    <div class="col-12 col-md-3 d-flex gap-2">
+      <button class="btn btn-primary btn-sm flex-fill" type="submit">Filtrar</button>
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'facturas' %}">Limpiar</a>
+    </div>
+  </div>
+</form>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Archivo</th><th>Tipo</th><th>Estado</th><th>Subida</th><th></th></tr></thead>
+      <tbody>
+        {% for f in page_obj %}
+          <tr>
+            <td class="fw-semibold">
+              {% if f.archivo %}<a href="{{ f.archivo.url }}" target="_blank">{{ f.archivo.name|truncatechars:40 }}</a>{% else %}—{% endif %}
+            </td>
+            <td><span class="badge badge-soft">{{ f.get_tipo_display }}</span></td>
+            <td><span class="badge badge-estado-{{ f.estado }}">{{ f.get_estado_display }}</span></td>
+            <td class="small text-muted">{{ f.creado|date:"d/m/Y H:i" }}</td>
+            <td class="text-end">
+              {% if f.estado == "pendiente" %}
+                <a class="btn btn-sm btn-primary" href="{% url 'factura_revisar' f.pk %}"><i class="bi bi-search me-1"></i> Revisar</a>
+              {% endif %}
+              <form method="post" action="{% url 'factura_descartar' f.pk %}" class="d-inline">
+                {% csrf_token %}<button class="btn btn-sm btn-outline-secondary" type="submit"><i class="bi bi-x-circle"></i></button>
+              </form>
+              <form method="post" action="{% url 'factura_borrar' f.pk %}" data-confirm="¿Eliminar la factura?" class="d-inline">
+                {% csrf_token %}<button class="btn btn-sm btn-outline-danger" type="submit"><i class="bi bi-trash"></i></button>
+              </form>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="5" class="empty-state"><i class="bi bi-file-earmark-text"></i>No hay facturas importadas.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% include "partials/paginacion.html" %}
+{% endblock %}

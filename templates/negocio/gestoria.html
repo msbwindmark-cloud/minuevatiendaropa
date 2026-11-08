@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% load core_extras %}
+{% block title %}Gestoría · Bosselli{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1 class="page-title">Paquete para la gestoría</h1>
+    <p class="page-sub">Genera un ZIP con el resumen del trimestre (Excel + PDF) y todas las facturas adjuntas. Opcionalmente envíalo por email.</p>
+  </div>
+</div>
+
+<form class="filtros mb-4" method="get" id="gestoriaFiltros">
+  <div class="row g-2 align-items-end">
+    <div class="col-6 col-md-3">
+      <label class="form-label">Año</label>
+      <input class="form-control" type="number" name="anyo" value="{{ anyo }}" min="2020" max="2100">
+    </div>
+    <div class="col-6 col-md-3">
+      <label class="form-label">Trimestre</label>
+      <select class="form-select" name="trimestre">
+        <option value="1" {% if trimestre == "1" %}selected{% endif %}>1T (ene-mar)</option>
+        <option value="2" {% if trimestre == "2" %}selected{% endif %}>2T (abr-jun)</option>
+        <option value="3" {% if trimestre == "3" %}selected{% endif %}>3T (jul-sep)</option>
+        <option value="4" {% if trimestre == "4" %}selected{% endif %}>4T (oct-dic)</option>
+      </select>
+    </div>
+    <div class="col-12 col-md-3 d-flex gap-2">
+      <button class="btn btn-primary btn-sm flex-fill" type="submit">Calcular</button>
+    </div>
+  </div>
+</form>
+
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="stat-card text-center">
+      <div class="stat-label">Ventas</div>
+      <div class="stat-value">{{ n_ventas }}</div>
+      <div class="stat-hint">{{ total_ventas|euro }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card text-center">
+      <div class="stat-label">Compras</div>
+      <div class="stat-value">{{ n_compras }}</div>
+      <div class="stat-hint">{{ total_compras|euro }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card text-center">
+      <div class="stat-label">Gastos</div>
+      <div class="stat-value">{{ n_gastos }}</div>
+      <div class="stat-hint">{{ total_gastos|euro }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card text-center">
+      <div class="stat-label">Nóminas</div>
+      <div class="stat-value">{{ n_nominas }}</div>
+      <div class="stat-hint">{{ total_nominas|euro }}</div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <h2 class="h5">Periodo: {{ inicio|date:"d/m/Y" }} – {{ fin|date:"d/m/Y" }}</h2>
+    <p class="text-muted small mb-3">
+      El ZIP incluirá <strong>Resumen_{{ anyo }}_T{{ trimestre }}.xlsx</strong> y <strong>.pdf</strong> más
+      las facturas adjuntas a cada venta, compra y gasto ({{ n_archivos }} archivos).
+    </p>
+    <div class="d-flex flex-wrap gap-2">
+      <a class="btn btn-gold" href="{% url 'gestoria_zip' %}?anyo={{ anyo }}&trimestre={{ trimestre }}">
+        <i class="bi bi-download me-1"></i> Descargar ZIP
+      </a>
+      <a class="btn btn-outline-primary" href="{% url 'gestoria_zip' %}?anyo={{ anyo }}&trimestre={{ trimestre }}&enviar=1">
+        <i class="bi bi-envelope me-1"></i> Enviar por email a la gestoría
+      </a>
+    </div>
+    <div class="helptext mt-2">
+      El email de destino se toma de Configuración → Ajustes (email de gestoría) o de la organización. Configúralo en el admin si aún no está.
+    </div>
+  </div>
+</div>
+
+<div class="alert alert-light border small">
+  <i class="bi bi-info-circle me-1"></i> Si el envío por email no está configurado (sin SMTP), el email se imprimirá en la consola del servidor (modo desarrollo).
+</div>
+{% endblock %}

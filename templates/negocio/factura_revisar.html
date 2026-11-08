@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% load core_extras %}
+{% block title %}Revisar factura · Bosselli{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1 class="page-title">Revisar factura #{{ factura.pk }}</h1>
+    <p class="page-sub">Comprueba los datos detectados y crea el gasto, compra o venta correspondiente.</p>
+  </div>
+  <a class="btn btn-outline-secondary btn-sm" href="{% url 'facturas' %}"><i class="bi bi-arrow-left me-1"></i> Volver</a>
+</div>
+
+<div class="row g-3">
+  <div class="col-12 col-lg-6">
+    <div class="card h-100">
+      <div class="card-header"><i class="bi bi-file-earmark-text text-gold me-1"></i> Datos detectados</div>
+      <div class="card-body">
+        <dl class="mb-0">
+          <div class="kv"><dt>Tipo detectado</dt><dd>{{ factura.get_tipo_display }}</dd></div>
+          <div class="kv"><dt>Proveedor</dt><dd>{{ datos.proveedor|default:"—" }}</dd></div>
+          <div class="kv"><dt>CIF</dt><dd>{{ datos.cif|default:"—" }}</dd></div>
+          <div class="kv"><dt>Nº factura</dt><dd>{{ datos.numero|default:"—" }}</dd></div>
+          <div class="kv"><dt>Fecha</dt><dd>{{ datos.fecha|default:"—" }}</dd></div>
+          <div class="kv"><dt>Base imponible</dt><dd>{{ datos.base|default:"—" }}</dd></div>
+          <div class="kv"><dt>IVA %</dt><dd>{{ datos.iva_pct|default:"—" }}</dd></div>
+          <div class="kv"><dt>Total</dt><dd class="text-gold">{{ datos.total|default:"—" }}</dd></div>
+        </dl>
+        {% if factura.error %}
+          <div class="alert alert-warning small mt-3">
+            <i class="bi bi-exclamation-triangle me-1"></i> {{ factura.error }}
+          </div>
+        {% endif %}
+        {% if factura.archivo %}
+          <a class="btn btn-outline-primary btn-sm w-100 mt-3" href="{{ factura.archivo.url }}" target="_blank">
+            <i class="bi bi-paperclip me-1"></i> Abrir archivo original
+          </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-6">
+    <div class="card h-100">
+      <div class="card-header"><i class="bi bi-lightning text-gold me-1"></i> Crear registro</div>
+      <div class="card-body d-grid gap-2">
+        <p class="small text-muted">El formulario se abrirá pre-rellenado con los datos detectados. Podrás corregirlos antes de guardar. El archivo de la factura se vinculará automáticamente.</p>
+        <a class="btn btn-primary" href="{{ gasto_url }}">
+          <i class="bi bi-cash-coin me-1"></i> Crear gasto
+        </a>
+        <a class="btn btn-outline-primary" href="{{ compra_url }}">
+          <i class="bi bi-cart me-1"></i> Crear compra (mercancía)
+        </a>
+        <a class="btn btn-outline-primary" href="{{ venta_url }}">
+          <i class="bi bi-receipt me-1"></i> Crear venta (factura emitida)
+        </a>
+        <form method="post" action="{% url 'factura_descartar' factura.pk %}" class="mt-2">
+          {% csrf_token %}
+          <button class="btn btn-outline-secondary w-100" type="submit"><i class="bi bi-x-circle me-1"></i> Descartar factura</button>
+        </form>
+      </div>
+    </div>
+
+    {% if factura.texto %}
+      <div class="card mt-3">
+        <div class="card-header"><i class="bi bi-file-text text-gold me-1"></i> Texto extraído</div>
+        <div class="card-body">
+          <pre class="small text-muted" style="max-height:260px;overflow:auto;white-space:pre-wrap;">{{ factura.texto }}</pre>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

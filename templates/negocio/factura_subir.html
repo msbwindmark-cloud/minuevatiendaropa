@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Subir factura · Bosselli{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1 class="page-title">Subir factura</h1>
+    <p class="page-sub">PDF digital, foto de la factura o documento escaneado. El sistema intentará leer los datos.</p>
+  </div>
+  <a class="btn btn-outline-secondary btn-sm" href="{% url 'facturas' %}"><i class="bi bi-arrow-left me-1"></i> Volver</a>
+</div>
+
+<div class="card" style="max-width:720px;">
+  <div class="card-body">
+    <form method="post" enctype="multipart/form-data" novalidate>
+      {% csrf_token %}
+      {% if form.non_field_errors %}<div class="alert alert-danger small">{{ form.non_field_errors }}</div>{% endif %}
+      <div class="mb-3">
+        <label class="form-label" for="{{ form.archivo.id_for_label }}">Archivo (PDF o imagen)</label>
+        {{ form.archivo }}
+        <div class="helptext">Formatos admitidos: PDF, JPG, PNG, WEBP, TIFF. Máximo 25 MB.</div>
+        {% for e in form.archivo.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+      </div>
+      <div class="mb-3">
+        <label class="form-label" for="{{ form.tipo.id_for_label }}">Tipo de documento</label>
+        {{ form.tipo }}
+        <div class="helptext">Si eliges "Detectar automáticamente" el sistema intentará adivinarlo.</div>
+      </div>
+      <div class="alert alert-light small border">
+        <i class="bi bi-info-circle me-1"></i>
+        <strong>3 vías disponibles:</strong> PDF con texto → lectura automática; foto de factura → OCR (si está instalado en el servidor); cualquier caso → siempre podrás rellenar los datos a mano en la pantalla de revisión.
+      </div>
+      <button class="btn btn-primary" type="submit"><i class="bi bi-cloud-arrow-up me-1"></i> Subir y analizar</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

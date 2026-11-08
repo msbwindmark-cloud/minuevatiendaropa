@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+{% load core_extras %}
+{% block title %}Informes · Bosselli{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1 class="page-title">Informes y exportaciones</h1>
+    <p class="page-sub">Listados en PDF y Excel de toda la gestión. Filtra por fechas y tienda.</p>
+  </div>
+</div>
+
+<form class="filtros mb-4" method="get" id="filtrosExport">
+  <div class="row g-2 align-items-end">
+    <div class="col-6 col-md-3">
+      <label class="form-label">Desde</label>
+      <input type="date" class="form-control" name="desde" value="{{ request.GET.desde }}">
+    </div>
+    <div class="col-6 col-md-3">
+      <label class="form-label">Hasta</label>
+      <input type="date" class="form-control" name="hasta" value="{{ request.GET.hasta }}">
+    </div>
+    <div class="col-12 col-md-3">
+      <label class="form-label">Tienda (cuando aplique)</label>
+      <select class="form-select" name="tienda">
+        <option value="">Todas</option>
+        {% for t in tiendas %}<option value="{{ t.pk }}" {% if request.GET.tienda == t.pk|stringformat:"s" %}selected{% endif %}>{{ t.nombre }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-12 col-md-3">
+      <label class="form-label">Año (nóminas)</label>
+      <input class="form-control" type="number" name="anyo" value="{{ request.GET.anyo }}" placeholder="2026">
+    </div>
+  </div>
+</form>
+
+<div class="row g-3">
+  {% for tipo, icono, titulo, desc in listados %}
+  {% empty %}
+  {% endfor %}
+
+  {% with items="ventas,compras,gastos,articulos,stock,clientes,proveedores,empleados,nominas" %}
+  {% endwith %}
+
+  <div class="col-12 col-md-6 col-xl-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="d-flex align-items-center gap-2 mb-2"><i class="bi bi-receipt text-gold fs-4"></i><h2 class="h6 mb-0">Ventas</h2></div>
+        <p class="small text-muted mb-3">Todas las ventas registradas con base, IVA y total.</p>
+        <div class="d-flex gap-2">
+          <a class="btn btn-sm btn-outline-primary flex-fill" href="{% url 'exportar' 'ventas' 'pdf' %}?{{ request.GET.urlencode }}"><i class="bi bi-file-pdf me-1"></i> PDF</a>
+          <a class="btn btn-sm btn-outline-success flex-fill" href="{% url 'exportar' 'ventas' 'xlsx' %}?{{ request.GET.urlencode }}"><i class="bi bi-file-excel me-1"></i> Excel</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-md-6 col-xl-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="d-flex align-items-center gap-2 mb-2"><i class="bi bi-cart text-gold fs-4"></i><h2 class="h6 mb-0">Compras</h2></div>
+        <p class="small text-muted mb-3">Facturas de proveedores y mercancía recibida.</p>
+        <div class="d-flex gap-2">
+          <a class="btn btn-sm btn-outline-primary flex-fill" href="{% url 'exportar' 'compras' 'pdf' %}?{{ request.GET.urlencode }}"><i class="bi bi-file-pdf me-1"></i> PDF</a>
+          <a class="btn btn-sm btn-outline-success flex-fill" href="{% url 'exportar' 'compras' 'xlsx' %}?{{ request.GET.urlencode }}"><i class="bi bi-file-excel me-1"></i> Excel</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-md-6 col-xl-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="d-flex align-items-center gap-2 mb-2"><i class="bi bi-cash-coin text-gold fs-4"></i><h2 class="h6 mb-0">Gastos</h2></div>
+        <p class="small text-muted mb-3">Gastos por categoría con base e IVA.</p>
+        <div class="d-flex gap-2">
+          <a class="btn btn-sm btn-outline-primary flex-fill" href="{% url 'exportar' 'gastos' 'pdf' %}?{{ request.GET.urlencode }}"><i class="bi bi-file-pdf me-1"></i> PDF</a>
+          <a class="btn btn-sm btn-outline-success flex-fill" href="{% url 'exportar' 'gastos' 'xlsx' %}?{{ request.GET.urlencode }}"><i class="bi bi-file-excel me-1"></i> Excel</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-md-6 col-xl-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="d-flex align-items-center gap-2 mb-2"><i class="bi bi-bag text-gold fs-4"></i><h2 class="h6 mb-0">Artículos</h2></div>
+        <p class="small text-muted mb-3">Catálogo con coste, PVP, margen y stock.</p>
+        <div class="d-flex gap-2">
+          <a class="btn btn-sm btn-outline-primary flex-fill" href="{% url 'exportar' 'articulos' 'pdf' %}?{{ request.GET.urlencode }}"><i class="bi bi-file-pdf me-1"></i> PDF</a>
+          <a class="btn btn-sm btn-outline-success flex-fill" href="{% url 'exportar' 'articulos' 'xlsx' %}?{{ request.GET.urlencode }}"><i class="bi bi-file-excel me-1"></i> Excel</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-md-6 col-xl-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="d-flex align-items-center gap-2 mb-2"><i class="bi bi-box-seam text-gold fs-4"></i><h2 class="h6 mb-0">Stock por tienda</h2></div>
+        <p class="small text-muted mb-3">Unidades disponibles y valor a coste.</p>
+        <div class="d-flex gap-2">
+          <a class="btn btn-sm btn-outline-primary flex-fill" href="{% url 'exportar' 'stock' 'pdf' %}?{{ request.GET.urlencode }}"><i class="bi bi-file-pdf me-1"></i> PDF</a>
+          <a class="btn btn-sm btn-outline-success flex-fill" href="{% url 'exportar' 'stock' 'xlsx' %}?{{ request.GET.urlencode }}"><i class="bi bi-file-excel me-1"></i> Excel</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-md-6 col-xl-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="d-flex align-items-center gap-2 mb-2"><i class="bi bi-people text-gold fs-4"></i><h2 class="h6 mb-0">Clientes</h2></div>
+        <p class="small text-muted mb-3">Listado de clientes.</p>
+        <div class="d-flex gap-2">
+          <a class="btn btn-sm btn-outline-primary flex-fill" href="{% url 'exportar' 'clientes' 'pdf' %}?{{ request.GET.urlencode }}"><i class="bi bi-file-pdf me-1"></i> PDF</a>
+          <a class="btn btn-sm btn-outline-success flex-fill" href="{% url 'exportar' 'clientes' 'xlsx' %}?{{ request.GET.urlencode }}"><i class="bi bi-file-excel me-1"></i> Excel</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-md-6 col-xl-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="d-flex align-items-center gap-2 mb-2"><i class="bi bi-truck text-gold fs-4"></i><h2 class="h6 mb-0">Proveedores</h2></div>
+        <p class="small text-muted mb-3">Listado de proveedores.</p>
+        <div class="d-flex gap-2">
+          <a class="btn btn-sm btn-outline-primary flex-fill" href="{% url 'exportar' 'proveedores' 'pdf' %}?{{ request.GET.urlencode }}"><i class="bi bi-file-pdf me-1"></i> PDF</a>
+          <a class="btn btn-sm btn-outline-success flex-fill" href="{% url 'exportar' 'proveedores' 'xlsx' %}?{{ request.GET.urlencode }}"><i class="bi bi-file-excel me-1"></i> Excel</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-md-6 col-xl-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="d-flex align-items-center gap-2 mb-2"><i class="bi bi-person-badge text-gold fs-4"></i><h2 class="h6 mb-0">Empleados</h2></div>
+        <p class="small text-muted mb-3">Fichas del personal.</p>
+        <div class="d-flex gap-2">
+          <a class="btn btn-sm btn-outline-primary flex-fill" href="{% url 'exportar' 'empleados' 'pdf' %}?{{ request.GET.urlencode }}"><i class="bi bi-file-pdf me-1"></i> PDF</a>
+          <a class="btn btn-sm btn-outline-success flex-fill" href="{% url 'exportar' 'empleados' 'xlsx' %}?{{ request.GET.urlencode }}"><i class="bi bi-file-excel me-1"></i> Excel</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-md-6 col-xl-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="d-flex align-items-center gap-2 mb-2"><i class="bi bi-wallet2 text-gold fs-4"></i><h2 class="h6 mb-0">Nóminas</h2></div>
+        <p class="small text-muted mb-3">Recibos de salarios del año indicado.</p>
+        <div class="d-flex gap-2">
+          <a class="btn btn-sm btn-outline-primary flex-fill" href="{% url 'exportar' 'nominas' 'pdf' %}?{{ request.GET.urlencode }}"><i class="bi bi-file-pdf me-1"></i> PDF</a>
+          <a class="btn btn-sm btn-outline-success flex-fill" href="{% url 'exportar' 'nominas' 'xlsx' %}?{{ request.GET.urlencode }}"><i class="bi bi-file-excel me-1"></i> Excel</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="alert alert-light border mt-4 small">
+  <i class="bi bi-info-circle me-1"></i> Los filtros de fecha y tienda se aplican a los listados que lo soportan. Para el paquete completo de la gestoría usa la sección <a href="{% url 'gestoria' %}">Gestoría</a>.
+</div>
+{% endblock %}

@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% load core_extras %}
+{% block title %}Empleados · Bosselli{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1 class="page-title">Empleados</h1>
+    <p class="page-sub">Fichas del personal de las dos tiendas.</p>
+  </div>
+  <a class="btn btn-gold btn-sm" href="{% url 'empleado_nuevo' %}"><i class="bi bi-plus-lg me-1"></i> Nuevo empleado</a>
+</div>
+
+<form class="filtros mb-3" method="get">
+  <div class="row g-2 align-items-end">
+    <div class="col-12 col-md-5">
+      <label class="form-label">Buscar</label>
+      <input class="form-control" name="q" value="{{ filtros.q }}" placeholder="Nombre, NIF o puesto" data-auto-search>
+    </div>
+    <div class="col-6 col-md-3">
+      <label class="form-label">Tienda</label>
+      <select class="form-select" name="tienda">
+        <option value="">Todas</option>
+        {% for t in tiendas %}<option value="{{ t.pk }}" {% if filtros.tienda == t.pk|stringformat:"s" %}selected{% endif %}>{{ t.nombre }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-6 col-md-2">
+      <label class="form-label">Activo</label>
+      <select class="form-select" name="activo">
+        <option value="">Todos</option>
+        <option value="1" {% if filtros.activo == "1" %}selected{% endif %}>Activos</option>
+        <option value="0" {% if filtros.activo == "0" %}selected{% endif %}>Baja</option>
+      </select>
+    </div>
+    <div class="col-12 col-md-2 d-flex gap-2">
+      <button class="btn btn-primary btn-sm flex-fill" type="submit">Filtrar</button>
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'empleados' %}">Limpiar</a>
+    </div>
+  </div>
+</form>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Nombre</th><th>Puesto</th><th>Tienda</th><th>Alta</th><th class="text-end">Salario anual</th><th>Estado</th><th></th></tr></thead>
+      <tbody>
+        {% for e in page_obj %}
+          <tr>
+            <td class="fw-semibold">{{ e.nombre_completo }}</td>
+            <td class="small">{{ e.puesto|default:"—" }}</td>
+            <td class="small">{{ e.tienda.nombre|default:"—" }}</td>
+            <td class="small">{{ e.fecha_alta|date:"d/m/Y" }}</td>
+            <td class="text-end num">{{ e.salario_bruto_anual|euro }}</td>
+            <td>{% if e.activo %}<span class="badge badge-estado-cobrada">Activo</span>{% else %}<span class="badge badge-estado-anulada">Baja</span>{% endif %}</td>
+            <td class="text-end">
+              <a class="btn btn-sm btn-icon btn-outline-secondary" href="{% url 'empleado_editar' e.pk %}"><i class="bi bi-pencil"></i></a>
+              <form method="post" action="{% url 'empleado_borrar' e.pk %}" data-confirm="¿Eliminar al empleado {{ e.nombre_completo }}?" class="d-inline">
+                {% csrf_token %}<button class="btn btn-sm btn-icon btn-outline-danger" type="submit"><i class="bi bi-trash"></i></button>
+              </form>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="7" class="empty-state"><i class="bi bi-person-badge"></i>No hay empleados.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% include "partials/paginacion.html" %}
+{% endblock %}

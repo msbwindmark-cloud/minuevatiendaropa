@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% load core_extras %}
+{% block title %}Nóminas · Bosselli{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1 class="page-title">Nóminas</h1>
+    <p class="page-sub">Recibos de salarios. Total neto filtrado: {{ total|euro }}</p>
+  </div>
+  <a class="btn btn-gold btn-sm" href="{% url 'nomina_nuevo' %}"><i class="bi bi-plus-lg me-1"></i> Nueva nómina</a>
+</div>
+
+<form class="filtros mb-3" method="get">
+  <div class="row g-2 align-items-end">
+    <div class="col-6 col-md-2">
+      <label class="form-label">Año</label>
+      <input class="form-control" type="number" name="anyo" value="{{ anyo }}" min="2020" max="2100">
+    </div>
+    <div class="col-6 col-md-4">
+      <label class="form-label">Empleado</label>
+      <select class="form-select" name="empleado">
+        <option value="">Todos</option>
+        {% for e in empleados %}<option value="{{ e.pk }}" {% if filtros.empleado == e.pk|stringformat:"s" %}selected{% endif %}>{{ e.nombre_completo }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-6 col-md-3">
+      <label class="form-label">Estado</label>
+      <select class="form-select" name="estado">
+        <option value="">Todos</option>
+        <option value="borrador" {% if filtros.estado == "borrador" %}selected{% endif %}>Borrador</option>
+        <option value="pagada" {% if filtros.estado == "pagada" %}selected{% endif %}>Pagada</option>
+      </select>
+    </div>
+    <div class="col-12 col-md-3 d-flex gap-2">
+      <button class="btn btn-primary btn-sm flex-fill" type="submit">Filtrar</button>
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'nominas' %}">Limpiar</a>
+    </div>
+  </div>
+</form>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Periodo</th><th>Empleado</th><th class="text-end">Bruto</th><th class="text-end">IRPF</th><th class="text-end">SS emp.</th><th class="text-end">Neto</th><th>Estado</th><th></th></tr></thead>
+      <tbody>
+        {% for n in page_obj %}
+          <tr>
+            <td class="fw-semibold">{{ n.periodo|date:"m/Y" }}</td>
+            <td>{{ n.empleado.nombre_completo }}</td>
+            <td class="text-end num">{{ n.bruto|euro }}</td>
+            <td class="text-end num small">{{ n.irpf|euro }}</td>
+            <td class="text-end num small">{{ n.ss_empleado|euro }}</td>
+            <td class="text-end num fw-bold text-gold">{{ n.neto|euro }}</td>
+            <td><span class="badge badge-estado-{{ n.estado }}">{{ n.get_estado_display }}</span></td>
+            <td class="text-end">
+              <a class="btn btn-sm btn-icon btn-outline-secondary" href="{% url 'nomina_pdf' n.pk %}" target="_blank"><i class="bi bi-file-pdf"></i></a>
+              <a class="btn btn-sm btn-icon btn-outline-secondary" href="{% url 'nomina_editar' n.pk %}"><i class="bi bi-pencil"></i></a>
+              <form method="post" action="{% url 'nomina_borrar' n.pk %}" data-confirm="¿Eliminar la nómina?" class="d-inline">
+                {% csrf_token %}<button class="btn btn-sm btn-icon btn-outline-danger" type="submit"><i class="bi bi-trash"></i></button>
+              </form>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="8" class="empty-state"><i class="bi bi-wallet2"></i>No hay nóminas.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% include "partials/paginacion.html" %}
+{% endblock %}
