@@ -31,6 +31,10 @@
         </span>
       </a>
       <div class="ms-auto d-flex align-items-center gap-2">
+        <a href="{% url 'notificaciones' %}" class="btn btn-user position-relative" title="Notificaciones">
+          <i class="bi bi-bell"></i>
+          {% if total_alertas %}<span class="position-absolute top-0 start-100 translate-middle badge rounded-pill text-bg-danger" style="font-size:.6rem;">{{ total_alertas }}</span>{% endif %}
+        </a>
         <a href="{% url 'venta_nuevo' %}" class="btn btn-gold btn-sm d-none d-md-inline-flex align-items-center gap-1">
           <i class="bi bi-plus-lg"></i> Nueva venta
         </a>

@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% load core_extras %}
+{% block title %}Notificaciones · Bosselli{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1 class="page-title">Notificaciones y alertas</h1>
+    <p class="page-sub">Centro de alertas: stock bajo, facturas pendientes, compras sin pagar, nóminas en borrador.</p>
+  </div>
+  {% if total_alertas %}
+    <span class="badge text-bg-danger fs-6">{{ total_alertas }} alertas</span>
+  {% else %}
+    <span class="badge text-bg-success fs-6">Todo en orden</span>
+  {% endif %}
+</div>
+
+{% if total_alertas == 0 %}
+  <div class="card">
+    <div class="card-body empty-state">
+      <i class="bi bi-check-circle"></i>
+      <h5 class="mt-2">No hay alertas pendientes</h5>
+      <p class="text-muted small">El stock está por encima del mínimo, no hay facturas por revisar ni compras pendientes de pago.</p>
+    </div>
+  </div>
+{% endif %}
+
+{% if articulos_bajo %}
+  <div class="card mb-3">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <span><i class="bi bi-box-seam text-danger me-1"></i> Stock bajo ({{ articulos_bajo|length }})</span>
+      <form method="post" class="d-flex gap-2">
+        {% csrf_token %}
+        <input type="hidden" name="enviar_alerta" value="1">
+        <input class="form-control form-control-sm" type="text" name="emails" placeholder="email@ejemplo.com" style="width:220px;">
+        <button class="btn btn-sm btn-outline-danger" type="submit">
+          <i class="bi bi-envelope me-1"></i> Enviar alerta por email
+        </button>
+      </form>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-sm table-hover mb-0">
+        <thead><tr><th>Referencia</th><th>Artículo</th><th class="text-end">Stock actual</th><th class="text-end">Mínimo</th><th></th></tr></thead>
+        <tbody>
+          {% for a in articulos_bajo %}
+            <tr>
+              <td class="small text-muted">{{ a.referencia }}</td>
+              <td><a class="text-decoration-none" href="{% url 'articulo_detalle' a.pk %}">{{ a.nombre }}</a></td>
+              <td class="text-end num fw-bold text-danger">{{ a.stock_total }}</td>
+              <td class="text-end num text-muted">{{ a.stock_minimo }}</td>
+              <td class="text-end">
+                <a class="btn btn-sm btn-outline-primary" href="{% url 'stock_ajuste' %}">Reponer</a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endif %}
+
+{% if facturas_pend %}
+  <div class="card mb-3">
+    <div class="card-header"><i class="bi bi-file-earmark-text text-warning me-1"></i> Facturas por revisar ({{ facturas_pend.count }})</div>
+    <div class="table-responsive">
+      <table class="table table-sm table-hover mb-0">
+        <thead><tr><th>Archivo</th><th>Tipo</th><th>Subida</th><th></th></tr></thead>
+        <tbody>
+          {% for f in facturas_pend %}
+            <tr>
+              <td class="fw-semibold">{{ f.archivo.name|truncatechars:40 }}</td>
+              <td><span class="badge badge-soft">{{ f.get_tipo_display }}</span></td>
+              <td class="small text-muted">{{ f.creado|date:"d/m/Y H:i" }}</td>
+              <td class="text-end">
+                <a class="btn btn-sm btn-primary" href="{% url 'factura_revisar' f.pk %}">Revisar</a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endif %}
+
+{% if compras_pend %}
+  <div class="card mb-3">
+    <div class="card-header"><i class="bi bi-cart text-warning me-1"></i> Compras pendientes de pago ({{ compras_pend.count }})</div>
+    <div class="table-responsive">
+      <table class="table table-sm table-hover mb-0">
+        <thead><tr><th>Número</th><th>Proveedor</th><th class="text-end">Total</th><th></th></tr></thead>
+        <tbody>
+          {% for c in compras_pend %}
+            <tr>
+              <td><a class="text-decoration-none" href="{% url 'compra_detalle' c.pk %}">{{ c.numero }}</a></td>
+              <td>{{ c.proveedor.nombre }}</td>
+              <td class="text-end num">{{ c.total|euro }}</td>
+              <td class="text-end">
+                <a class="btn btn-sm btn-outline-primary" href="{% url 'compra_editar' c.pk %}">Marcar pagada</a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endif %}
+
+{% if nominas_borr %}
+  <div class="card mb-3">
+    <div class="card-header"><i class="bi bi-wallet2 text-warning me-1"></i> Nóminas en borrador ({{ nominas_borr.count }})</div>
+    <div class="table-responsive">
+      <table class="table table-sm table-hover mb-0">
+        <thead><tr><th>Periodo</th><th>Empleado</th><th class="text-end">Neto</th><th></th></tr></thead>
+        <tbody>
+          {% for n in nominas_borr %}
+            <tr>
+              <td>{{ n.periodo|date:"m/Y" }}</td>
+              <td>{{ n.empleado.nombre_completo }}</td>
+              <td class="text-end num">{{ n.neto|euro }}</td>
+              <td class="text-end">
+                <a class="btn btn-sm btn-outline-primary" href="{% url 'nomina_editar' n.pk %}">Revisar</a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endif %}
+
+<div class="alert alert-light border small mt-3">
+  <i class="bi bi-info-circle me-1"></i>
+  <strong>Configuración:</strong> las alertas de stock bajo se envían por email si
+  <code>notificar_stock_bajo</code> está activo en Ajustes (admin). El email de
+  destino se configura en <code>email_notificaciones</code>.
+</div>
+{% endblock %}

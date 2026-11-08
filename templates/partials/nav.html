@@ -84,6 +84,12 @@
       <i class="bi bi-cloud-arrow-down"></i> Backup
     </a>
   </li>
+  <li class="nav-item">
+    <a class="nav-link {% if '/notificaciones/' in request.path %}active{% endif %}" href="{% url 'notificaciones' %}">
+      <i class="bi bi-bell"></i> Notificaciones
+      {% if total_alertas %}<span class="badge rounded-pill text-bg-danger ms-auto">{{ total_alertas }}</span>{% endif %}
+    </a>
+  </li>
 </ul>
 
 {% if es_superuser or perfil.es_admin or perfil.es_gestor %}
